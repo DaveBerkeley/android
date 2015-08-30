@@ -4,22 +4,20 @@ import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.content.Intent;
 
 
-public class MainActivity extends ActionBarActivity {
+public class MqttSettingsActivity extends ActionBarActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_mqtt_settings);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        //getMenuInflater().inflate(R.menu.menu_mqtt_settings, menu);
         return true;
     }
 
@@ -32,16 +30,9 @@ public class MainActivity extends ActionBarActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            actionSettings(null);
             return true;
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    /** Called when the user clicks the Settings button */
-    public void actionSettings(View view) {
-        Intent intent = new Intent(this, MqttSettingsActivity.class);
-        startActivity(intent);
     }
 }

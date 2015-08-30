@@ -16,6 +16,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".MqttSettingsActivity"
+            android:label="@string/title_activity_mqtt_settings" >
+        </activity>
     </application>
 
 </manifest>

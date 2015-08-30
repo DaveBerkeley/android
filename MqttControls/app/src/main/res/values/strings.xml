@@ -3,4 +3,6 @@
 
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+    <string name="button_send">The Button</string>
+    <string name="title_activity_mqtt_settings">MqttSettings</string>
 </resources>
