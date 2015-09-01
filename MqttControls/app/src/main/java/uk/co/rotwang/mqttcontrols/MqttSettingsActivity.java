@@ -21,11 +21,13 @@ class MqttSettings {
 
     String server;
     int port;
+    String url;
 
     public void read(Context context) {
         SharedPreferences sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_WORLD_READABLE);
         server = sp.getString("server", "");
         port = sp.getInt("port", 1883);
+        url = sp.getString("url", "");
     }
 
     public void save(Context context) {
@@ -33,6 +35,7 @@ class MqttSettings {
         SharedPreferences.Editor edit = sp.edit();
         edit.putString("server", server);
         edit.putInt("port", port);
+        edit.putString("url", url);
         edit.commit();
     }
 };
@@ -55,6 +58,8 @@ public class MqttSettingsActivity extends ActionBarActivity {
         edit.setText(s.server);
         edit = (EditText) findViewById(R.id.port_edit);
         edit.setText(Integer.toString(s.port));
+        edit = (EditText) findViewById(R.id.url_edit);
+        edit.setText(s.url);
     }
 
     @Override
@@ -94,9 +99,12 @@ public class MqttSettingsActivity extends ActionBarActivity {
         edit = (EditText) findViewById(R.id.port_edit);
         String port = edit.getText().toString();
         s.port = Integer.parseInt(port);
+        edit = (EditText) findViewById(R.id.url_edit);
+        s.url = edit.getText().toString();
 
         toast("Saving " + s.server + ":" + port);
 
         s.save(this);
+        finish();
     }
 }
