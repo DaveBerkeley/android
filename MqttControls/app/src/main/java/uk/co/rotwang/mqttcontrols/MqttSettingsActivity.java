@@ -25,7 +25,7 @@ class MqttSettings {
     public void read(Context context) {
         SharedPreferences sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_WORLD_READABLE);
         server = sp.getString("server", "");
-        port = sp.getInt("port", 1888);
+        port = sp.getInt("port", 1883);
     }
 
     public void save(Context context) {
@@ -33,6 +33,7 @@ class MqttSettings {
         SharedPreferences.Editor edit = sp.edit();
         edit.putString("server", server);
         edit.putInt("port", port);
+        edit.commit();
     }
 };
 
@@ -78,6 +79,13 @@ public class MqttSettingsActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    private void toast(CharSequence text) {
+        // Show Toast
+        int duration = Toast.LENGTH_SHORT;
+        Toast toast = Toast.makeText(this, text, duration);
+        toast.show();
+    }
+
     /** Called when the user clicks the Settings button */
     public void saveMqttSettings(View view) {
         MqttSettings s = new MqttSettings();
@@ -87,11 +95,7 @@ public class MqttSettingsActivity extends ActionBarActivity {
         String port = edit.getText().toString();
         s.port = Integer.parseInt(port);
 
-        // Show Toast
-        CharSequence text = "Saving " + s.server + ":" + port;
-        int duration = Toast.LENGTH_SHORT;
-        Toast toast = Toast.makeText(this, text, duration);
-        toast.show();
+        toast("Saving " + s.server + ":" + port);
 
         s.save(this);
     }
