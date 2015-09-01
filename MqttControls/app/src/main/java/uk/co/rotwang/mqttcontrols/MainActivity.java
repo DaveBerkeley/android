@@ -62,7 +62,8 @@ public class MainActivity extends ActionBarActivity {
 
         try
         {
-            client.subscribe("home/power");
+            client.subscribe("node/jeenet/1/temp");
+            client.subscribe("node/jeenet/11/voltage");
         }
         catch (MqttException e)
         {
