@@ -175,7 +175,7 @@ class MqttProgressBar extends ProgressBar implements mqttHandler {
     @Override
     public void onMessage(String topic, MqttMessage msg)
     {
-        Log.d(getClass().getCanonicalName(), "Progress:" + topic + ":" + msg.toString());
+        Log.d(getClass().getCanonicalName(), topic + ":" + msg.toString());
 
         try {
             final float f = Float.parseFloat(msg.toString());
@@ -202,7 +202,7 @@ class MqttCheckBox extends CheckBox implements mqttHandler {
     @Override
     public void onMessage(String topic, MqttMessage msg)
     {
-        Log.d(getClass().getCanonicalName(), "CheckBox:" + topic + ":" + msg.toString());
+        Log.d(getClass().getCanonicalName(), topic + ":" + msg.toString());
 
         try {
             int i = (int) Float.parseFloat(msg.toString());
@@ -229,7 +229,7 @@ class MqttTextView extends TextView implements mqttHandler {
     @Override
     public void onMessage(String topic, MqttMessage msg)
     {
-        Log.d(getClass().getCanonicalName(), "TextView:" + topic + ":" + msg.toString());
+        Log.d(getClass().getCanonicalName(), topic + ":" + msg.toString());
         setText(msg.toString());
     }
 };
@@ -292,6 +292,18 @@ public class MainActivity extends ActionBarActivity {
             double max = Double.parseDouble(args[1]);
             return new MqttProgressBar(this, handler, min, max, args[2]);
         }
+        if (type == "CheckBox") {
+            String[] args = params.split(";");
+            return new MqttCheckBox(this, handler, args[0]);
+        }
+        if (type == "TextView") {
+            String[] args = params.split(";");
+            return new MqttTextView(this, handler, args[0]);
+        }
+        if (type == "TextLabel") {
+            String[] args = params.split(";");
+            return new MqttLabel(this, args[0]);
+        }
         return null;
     }
 
@@ -310,17 +322,17 @@ public class MainActivity extends ActionBarActivity {
         view = viewFactory(handler, "ProgressBar", "0;50;node/jeenet/8/voltage");
         layout.addView(view);
 
-        CheckBox cb = new MqttCheckBox(this, handler, "node/jeenet/7/state");
-        layout.addView(cb);
+        view = viewFactory(handler, "CheckBox", "node/jeenet/7/state");
+        layout.addView(view);
 
         view = viewFactory(handler, "Button", "Relay;uif/button/2;1");
         layout.addView(view);
 
-        TextView tv = new MqttLabel(this, "Charlotte V");
-        layout.addView(tv);
+        view = viewFactory(handler, "TextView", "node/jeenet/11/voltage");
+        layout.addView(view);
 
-        tv = new MqttTextView(this, handler, "node/jeenet/11/voltage");
-        layout.addView(tv);
+        view = viewFactory(handler, "TextLabel", "Charlotte V");
+        layout.addView(view);
     }
 
     @Override
