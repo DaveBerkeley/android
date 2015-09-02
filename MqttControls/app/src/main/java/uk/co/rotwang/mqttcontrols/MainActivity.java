@@ -13,6 +13,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
@@ -179,12 +180,9 @@ class MqttProgressBar extends ProgressBar implements mqttHandler {
 
 class MqttCheckBox extends CheckBox implements mqttHandler {
 
-    Activity activity;
-
-    public MqttCheckBox(Activity ctx, callBackHandler handler, String topic) {
+    public MqttCheckBox(Context ctx, callBackHandler handler, String topic) {
 
         super(ctx);
-        activity = ctx;
         handler.addHandler(topic, this);
     }
 
@@ -201,6 +199,25 @@ class MqttCheckBox extends CheckBox implements mqttHandler {
         catch (NumberFormatException ex) {
             Log.d(getClass().getCanonicalName(), "Bad number:" + msg.toString());
         }
+    }
+};
+
+    /*
+     *  TextView
+     */
+
+class MqttTextView extends TextView implements mqttHandler {
+
+    public MqttTextView(Activity ctx, callBackHandler handler, String topic) {
+        super(ctx);
+        handler.addHandler(topic, this);
+    }
+
+    @Override
+    public void onMessage(String topic, MqttMessage msg)
+    {
+        Log.d(getClass().getCanonicalName(), "TextView:" + topic + ":" + msg.toString());
+        setText(msg.toString());
     }
 };
 
@@ -241,10 +258,10 @@ public class MainActivity extends ActionBarActivity {
 
         LinearLayout layout = (LinearLayout) findViewById(R.id.main_layout);
 
-        ProgressBar pb = new MqttProgressBar(this, 0, 15, handler, "node/jeenet/11/voltage");
+        ProgressBar pb = new MqttProgressBar(this, 0, 15, handler, "node/jeenet/11/vcc");
         layout.addView(pb);
 
-        Button bt = new MqttButton(this, "A button", handler, "uif/button");
+        Button bt = new MqttButton(this, "Radio", handler, "uif/button/1");
         layout.addView(bt);
 
         pb = new MqttProgressBar(this, 0, 50, handler, "node/jeenet/8/voltage");
@@ -252,6 +269,12 @@ public class MainActivity extends ActionBarActivity {
 
         CheckBox cb = new MqttCheckBox(this, handler, "node/jeenet/7/state");
         layout.addView(cb);
+
+        bt = new MqttButton(this, "Relay", handler, "uif/button/2");
+        layout.addView(bt);
+
+        TextView tv = new MqttTextView(this, handler, "node/jeenet/11/voltage");
+        layout.addView(tv);
     }
 
     @Override
