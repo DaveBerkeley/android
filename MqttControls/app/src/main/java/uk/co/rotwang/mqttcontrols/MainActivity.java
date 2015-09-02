@@ -41,13 +41,13 @@ interface mqttHandler {
      *  MQTT Callback implementation
      */
 
-class callBackHandler implements MqttCallback
+class CallBackHandler implements MqttCallback
 {
     MqttClient client;
     Map<String, List<mqttHandler>> map;
     Activity activity;
 
-    public callBackHandler(Activity ctx, MqttClient mclient)
+    public CallBackHandler(Activity ctx, MqttClient mclient)
     {
         activity = ctx;
         client = mclient;
@@ -145,9 +145,7 @@ class Picker {
 
         try {
             JSONObject reader = new JSONObject(text);
-            String s = reader.getString(field);
-            //Log.d(getClass().getCanonicalName(), "s = " + s);
-            return s;
+            return reader.getString(field);
         }
         catch (JSONException ex) {
             Log.d(getClass().getCanonicalName(), "JSON Error:" + ex.getCause());
@@ -161,11 +159,11 @@ class Picker {
      */
 
 class MqttButton extends Button implements View.OnClickListener {
-    callBackHandler mqttHandler;
+    CallBackHandler mqttHandler;
     String topic;
     String data;
 
-    MqttButton(Context ctx, callBackHandler handler, String label, String wr_topic, String tx_data) {
+    MqttButton(Context ctx, CallBackHandler handler, String label, String wr_topic, String tx_data) {
         super(ctx);
         setText(label);
         mqttHandler = handler;
@@ -190,7 +188,7 @@ class MqttProgressBar extends ProgressBar implements mqttHandler {
     double min, max;
     Picker picker;
 
-    MqttProgressBar(Context ctx, callBackHandler handler, double fmin, double fmax, String rd_topic, String field) {
+    MqttProgressBar(Context ctx, CallBackHandler handler, double fmin, double fmax, String rd_topic, String field) {
         super(ctx, null, android.R.attr.progressBarStyleHorizontal);
         handler.addHandler(rd_topic, this);
         min = fmin;
@@ -200,9 +198,7 @@ class MqttProgressBar extends ProgressBar implements mqttHandler {
 
     private int translate(double n)
     {
-        final int i = (int) (100 * ((n - min) / (max - min)));
-        //Log.d(getClass().getCanonicalName(), n + "->" + i);
-        return i;
+        return (int) (100 * ((n - min) / (max - min)));
     }
 
     @Override
@@ -229,7 +225,7 @@ class MqttCheckBox extends CheckBox implements mqttHandler {
 
     Picker picker;
 
-    public MqttCheckBox(Context ctx, callBackHandler handler, String topic, String field) {
+    public MqttCheckBox(Context ctx, CallBackHandler handler, String topic, String field) {
 
         super(ctx);
         handler.addHandler(topic, this);
@@ -261,7 +257,7 @@ class MqttTextView extends TextView implements mqttHandler {
 
     Picker picker;
 
-    public MqttTextView(Activity ctx, callBackHandler handler, String topic, String field) {
+    public MqttTextView(Activity ctx, CallBackHandler handler, String topic, String field) {
         super(ctx);
         handler.addHandler(topic, this);
         picker = new Picker(field);
@@ -281,6 +277,10 @@ class MqttTextView extends TextView implements mqttHandler {
      */
 
 class MqttLabel extends TextView {
+
+    MqttLabel(Context ctx) {
+        super(ctx);
+    }
 
     public MqttLabel(Activity ctx, String text) {
         super(ctx);
@@ -304,10 +304,10 @@ public class MainActivity extends ActionBarActivity {
         MqttSettings conf = new MqttSettings();
         conf.read(this);
 
-        callBackHandler handler = null;
+        CallBackHandler handler = null;
         try {
             client = new MqttClient(conf.getUrl(), MqttClient.generateClientId(), null);
-            handler = new callBackHandler(this, client);
+            handler = new CallBackHandler(this, client);
             client.setCallback(handler);
         } catch (MqttException ex) {
             ex.printStackTrace();
@@ -323,12 +323,12 @@ public class MainActivity extends ActionBarActivity {
         loadControls(handler);
     }
 
-    private View viewFactory(callBackHandler handler, String type, String params) {
-        if (type == "Button") {
+    private View viewFactory(CallBackHandler handler, String type, String params) {
+        if (type.equals("Button")) {
             String[] args = params.split(";");
             return new MqttButton(this, handler, args[0], args[1], args[2]);
         }
-        if (type == "ProgressBar") {
+        if (type.equals("ProgressBar")) {
             String[] args = params.split(";");
             double min = Double.parseDouble(args[0]);
             double max = Double.parseDouble(args[1]);
@@ -337,28 +337,28 @@ public class MainActivity extends ActionBarActivity {
                 field = args[3];
             return new MqttProgressBar(this, handler, min, max, args[2], field);
         }
-        if (type == "CheckBox") {
+        if (type.equals("CheckBox")) {
             String[] args = params.split(";");
             String field = null;
             if (args.length > 1)
                 field = args[1];
             return new MqttCheckBox(this, handler, args[0], field);
         }
-        if (type == "TextView") {
+        if (type.equals("TextView")) {
             String[] args = params.split(";");
             String field = null;
             if (args.length > 1)
                 field = args[1];
             return new MqttTextView(this, handler, args[0], field);
         }
-        if (type == "TextLabel") {
+        if (type.equals("TextLabel")) {
             String[] args = params.split(";");
             return new MqttLabel(this, args[0]);
         }
         return null;
     }
 
-    private void loadControls(callBackHandler handler)
+    private void loadControls(CallBackHandler handler)
     {
         LinearLayout layout = (LinearLayout) findViewById(R.id.main_layout);
 
@@ -383,6 +383,9 @@ public class MainActivity extends ActionBarActivity {
         layout.addView(view);
 
         view = viewFactory(handler, "ProgressBar", "0;50;node/jeenet/8/voltage");
+        layout.addView(view);
+
+        view = viewFactory(handler, "TextView", "node/jeenet/8/time");
         layout.addView(view);
 
         view = viewFactory(handler, "Button", "Relay;uif/button/2;1");
