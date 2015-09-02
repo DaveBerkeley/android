@@ -1,5 +1,6 @@
 package uk.co.rotwang.mqttcontrols;
 
+import android.content.Context;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -7,6 +8,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.content.Intent;
+import android.widget.Button;
+import android.widget.LinearLayout;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
@@ -15,21 +18,91 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-class exampleCallBack implements MqttCallback
+import java.util.HashMap;
+import java.util.Map;
+
+interface mqttHandler {
+  public void onMessage(String topic, MqttMessage msg);
+};
+
+class callBackHandler implements MqttCallback
 {
+    Map<String, mqttHandler> map;
+
+    public callBackHandler()
+    {
+        map = new HashMap<String, mqttHandler>();
+    }
+
+    public void messageArrived(String topic, MqttMessage message)
+    {
+        mqttHandler handler = map.get(topic);
+        if (handler != null) {
+            handler.onMessage(topic, message);
+        } else {
+            Log.d(getClass().getCanonicalName(), "no handler:" + topic + ":" + message.toString());
+        }
+    }
+
     public void connectionLost(Throwable cause)
     {
         Log.d(getClass().getCanonicalName(), "MQTT Server connection lost");
-    }
-    public void messageArrived(String topic, MqttMessage message)
-    {
-        Log.d(getClass().getCanonicalName(), "Message arrived:" + topic + ":" + message.toString());
     }
     public void deliveryComplete(IMqttDeliveryToken token)
     {
         Log.d(getClass().getCanonicalName(), "Delivery complete");
     }
+
+    public void addHandler(String topic, mqttHandler handler)
+    {
+        map.put(topic, handler);
+    }
 };
+
+    /*
+     *  Button wrapper
+     */
+
+class MqttButton extends Button implements mqttHandler {
+    MqttClient client;
+    String topic;
+
+    MqttButton(Context ctx, MqttClient mclient, callBackHandler handler, String rd_topic, String wr_topic) {
+        super(ctx);
+        client = mclient;
+        handler.addHandler(rd_topic, this);
+        topic = wr_topic;
+
+        setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                // Perform action on click
+                Log.d(getClass().getCanonicalName(), "on click" + client);
+
+                String msg = "1";
+                try
+                {
+                    MqttMessage message = new MqttMessage();
+                    message.setPayload(msg.getBytes());
+                    client.publish(topic, message);
+                }
+                catch (MqttException e)
+                {
+                    Log.d(getClass().getCanonicalName(), "Publish failed with reason code = " + e.getReasonCode());
+                }
+            }
+        });
+
+    }
+
+    public void onMessage(String topic, MqttMessage msg)
+    {
+        Log.d(getClass().getCanonicalName(), "Button:" + topic + ":" + msg.toString());
+    }
+};
+
+    /*
+     *  Activity
+     */
 
 public class MainActivity extends ActionBarActivity {
 
@@ -43,9 +116,10 @@ public class MainActivity extends ActionBarActivity {
         MqttSettings conf = new MqttSettings();
         conf.read(this);
 
+        callBackHandler handler = new callBackHandler();
         try {
             client = new MqttClient(conf.getUrl(), MqttClient.generateClientId(), null);
-            client.setCallback(new exampleCallBack());
+            client.setCallback(handler);
         }
         catch (MqttException ex) {
             ex.printStackTrace();
@@ -69,6 +143,14 @@ public class MainActivity extends ActionBarActivity {
         {
             Log.d(getClass().getCanonicalName(), "Subscribe failed with reason code = " + e.getReasonCode());
         }
+
+        LinearLayout layout = (LinearLayout) findViewById(R.id.main_layout);
+        Button bt = new MqttButton(this, client, handler, "node/jeenet/1/temp", "uif/button");
+        bt.setText("A Button");
+        //bt.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT,
+        //        LayoutParams.WRAP_CONTENT));
+        layout.addView(bt);
+
     }
 
     @Override
