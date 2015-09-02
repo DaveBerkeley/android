@@ -21,6 +21,8 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -126,6 +128,35 @@ class callBackHandler implements MqttCallback
 };
 
     /*
+     *  Parser
+     */
+
+class Picker {
+
+    String field;
+
+    public Picker(String pfield) {
+        field = pfield;
+    }
+
+    public String pick(String text) {
+        if (field == null)
+            return text;
+
+        try {
+            JSONObject reader = new JSONObject(text);
+            String s = reader.getString(field);
+            //Log.d(getClass().getCanonicalName(), "s = " + s);
+            return s;
+        }
+        catch (JSONException ex) {
+            Log.d(getClass().getCanonicalName(), "JSON Error:" + ex.getCause());
+        }
+        return null;
+    }
+};
+
+    /*
      *  Button wrapper
      */
 
@@ -145,7 +176,7 @@ class MqttButton extends Button implements View.OnClickListener {
 
     @Override
     public void onClick(View view) {
-        Log.d(getClass().getCanonicalName(), "on click");
+        //Log.d(getClass().getCanonicalName(), "on click");
         mqttHandler.sendMessage(topic, data);
     }
 };
@@ -157,15 +188,17 @@ class MqttButton extends Button implements View.OnClickListener {
 class MqttProgressBar extends ProgressBar implements mqttHandler {
 
     double min, max;
+    Picker picker;
 
-    MqttProgressBar(Context ctx, callBackHandler handler, double fmin, double fmax, String rd_topic) {
+    MqttProgressBar(Context ctx, callBackHandler handler, double fmin, double fmax, String rd_topic, String field) {
         super(ctx, null, android.R.attr.progressBarStyleHorizontal);
         handler.addHandler(rd_topic, this);
         min = fmin;
         max = fmax;
+        picker = new Picker(field);
     }
 
-    private int translate(float n)
+    private int translate(double n)
     {
         final int i = (int) (100 * ((n - min) / (max - min)));
         //Log.d(getClass().getCanonicalName(), n + "->" + i);
@@ -175,10 +208,11 @@ class MqttProgressBar extends ProgressBar implements mqttHandler {
     @Override
     public void onMessage(String topic, MqttMessage msg)
     {
-        Log.d(getClass().getCanonicalName(), topic + ":" + msg.toString());
+        //Log.d(getClass().getCanonicalName(), topic + ":" + msg.toString());
 
         try {
-            final float f = Float.parseFloat(msg.toString());
+            final String s = picker.pick(msg.toString());
+            final double f = Double.parseDouble(s);
             setProgress(translate(f));
         }
         catch (NumberFormatException ex) {
@@ -193,20 +227,24 @@ class MqttProgressBar extends ProgressBar implements mqttHandler {
 
 class MqttCheckBox extends CheckBox implements mqttHandler {
 
-    public MqttCheckBox(Context ctx, callBackHandler handler, String topic) {
+    Picker picker;
+
+    public MqttCheckBox(Context ctx, callBackHandler handler, String topic, String field) {
 
         super(ctx);
         handler.addHandler(topic, this);
+        picker = new Picker(field);
     }
 
     @Override
     public void onMessage(String topic, MqttMessage msg)
     {
-        Log.d(getClass().getCanonicalName(), topic + ":" + msg.toString());
+        //Log.d(getClass().getCanonicalName(), topic + ":" + msg.toString());
 
         try {
-            int i = (int) Float.parseFloat(msg.toString());
-            Log.d(getClass().getCanonicalName(), "Got number:" + i);
+            final String s = picker.pick(msg.toString());
+            final int i = (int) Float.parseFloat(s);
+            //Log.d(getClass().getCanonicalName(), "Got number:" + i);
             setChecked(i != 0);
         }
         catch (NumberFormatException ex) {
@@ -221,16 +259,20 @@ class MqttCheckBox extends CheckBox implements mqttHandler {
 
 class MqttTextView extends TextView implements mqttHandler {
 
-    public MqttTextView(Activity ctx, callBackHandler handler, String topic) {
+    Picker picker;
+
+    public MqttTextView(Activity ctx, callBackHandler handler, String topic, String field) {
         super(ctx);
         handler.addHandler(topic, this);
+        picker = new Picker(field);
     }
 
     @Override
     public void onMessage(String topic, MqttMessage msg)
     {
-        Log.d(getClass().getCanonicalName(), topic + ":" + msg.toString());
-        setText(msg.toString());
+        //Log.d(getClass().getCanonicalName(), topic + ":" + msg.toString());
+        final String s = picker.pick(msg.toString());
+        setText(s);
     }
 };
 
@@ -290,15 +332,24 @@ public class MainActivity extends ActionBarActivity {
             String[] args = params.split(";");
             double min = Double.parseDouble(args[0]);
             double max = Double.parseDouble(args[1]);
-            return new MqttProgressBar(this, handler, min, max, args[2]);
+            String field = null;
+            if (args.length > 3)
+                field = args[3];
+            return new MqttProgressBar(this, handler, min, max, args[2], field);
         }
         if (type == "CheckBox") {
             String[] args = params.split(";");
-            return new MqttCheckBox(this, handler, args[0]);
+            String field = null;
+            if (args.length > 1)
+                field = args[1];
+            return new MqttCheckBox(this, handler, args[0], field);
         }
         if (type == "TextView") {
             String[] args = params.split(";");
-            return new MqttTextView(this, handler, args[0]);
+            String field = null;
+            if (args.length > 1)
+                field = args[1];
+            return new MqttTextView(this, handler, args[0], field);
         }
         if (type == "TextLabel") {
             String[] args = params.split(";");
@@ -313,25 +364,49 @@ public class MainActivity extends ActionBarActivity {
 
         View view = null;
 
-        view = viewFactory(handler, "ProgressBar", "11;13;node/jeenet/11/voltage");
+        view = viewFactory(handler, "TextLabel", "Charlotte Battery Voltage");
         layout.addView(view);
 
-        view = viewFactory(handler, "Button", "Radio;uif/button/1;1");
+        view = viewFactory(handler, "ProgressBar", "11;13;home/jeenet/voltagedev_11;voltage");
+        layout.addView(view);
+
+        view = viewFactory(handler, "TextView", "home/jeenet/voltagedev_11;voltage");
+        layout.addView(view);
+
+        view = viewFactory(handler, "Button", "Radio Relay;uif/button/1;1");
+        layout.addView(view);
+
+        view = viewFactory(handler, "CheckBox", "home/jeenet/relaydev_7;state");
+        layout.addView(view);
+
+        view = viewFactory(handler, "TextLabel", "Street Signal (random)");
         layout.addView(view);
 
         view = viewFactory(handler, "ProgressBar", "0;50;node/jeenet/8/voltage");
         layout.addView(view);
 
-        view = viewFactory(handler, "CheckBox", "node/jeenet/7/state");
-        layout.addView(view);
-
         view = viewFactory(handler, "Button", "Relay;uif/button/2;1");
         layout.addView(view);
 
-        view = viewFactory(handler, "TextView", "node/jeenet/11/voltage");
+        view = viewFactory(handler, "TextLabel", "Gas Meter (sector)");
         layout.addView(view);
 
-        view = viewFactory(handler, "TextLabel", "Charlotte V");
+        view = viewFactory(handler, "ProgressBar", "63;0;node/gas/sector");
+        layout.addView(view);
+
+        view = viewFactory(handler, "TextLabel", "Export");
+        layout.addView(view);
+
+        view = viewFactory(handler, "ProgressBar", "0;-3000;home/power;power");
+        layout.addView(view);
+
+        view = viewFactory(handler, "TextLabel", "Import");
+        layout.addView(view);
+
+        view = viewFactory(handler, "ProgressBar", "0;3000;home/power;power");
+        layout.addView(view);
+
+        view = viewFactory(handler, "TextView", "home/power;power");
         layout.addView(view);
     }
 
