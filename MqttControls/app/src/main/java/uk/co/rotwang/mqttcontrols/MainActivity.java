@@ -117,20 +117,15 @@ class callBackHandler implements MqttCallback
      *  Button wrapper
      */
 
-class MqttButton extends Button implements mqttHandler, View.OnClickListener {
+class MqttButton extends Button implements View.OnClickListener {
     callBackHandler mqttHandler;
     String topic;
 
-    MqttButton(Context ctx, String label, callBackHandler handler, String rd_topic, String wr_topic) {
+    MqttButton(Context ctx, String label, callBackHandler handler, String wr_topic) {
         super(ctx);
         setText(label);
         mqttHandler = handler;
         topic = wr_topic;
-
-        if (rd_topic != null) {
-            handler.addHandler(rd_topic, this);
-        }
-
         setOnClickListener(this);
     }
 
@@ -139,20 +134,6 @@ class MqttButton extends Button implements mqttHandler, View.OnClickListener {
         Log.d(getClass().getCanonicalName(), "on click");
         mqttHandler.sendMessage(topic, "1");
     }
-
-    @Override
-    public void onMessage(String topic, MqttMessage msg)
-    {
-        Log.d(getClass().getCanonicalName(), "Button:" + topic + ":" + msg.toString());
-        // TODO : change state of button
-        try {
-            int i = Integer.parseInt(msg.toString());
-            setPressed(i != 0);
-        }
-        catch (NumberFormatException ex) {
-            Log.d(getClass().getCanonicalName(), "Bad number:" + msg.toString());
-        }
-    }
 };
 
     /*
@@ -160,9 +141,21 @@ class MqttButton extends Button implements mqttHandler, View.OnClickListener {
      */
 
 class MqttProgressBar extends ProgressBar implements mqttHandler {
-    MqttProgressBar(Context ctx, callBackHandler handler, String rd_topic) {
+
+    float min, max;
+
+    MqttProgressBar(Context ctx, float fmin, float fmax, callBackHandler handler, String rd_topic) {
         super(ctx, null, android.R.attr.progressBarStyleHorizontal);
         handler.addHandler(rd_topic, this);
+        min = fmin;
+        max = fmax;
+    }
+
+    private int translate(float n)
+    {
+        final int i = (int) (100 * ((n - min) / (max - min)));
+        //Log.d(getClass().getCanonicalName(), n + "->" + i);
+        return i;
     }
 
     @Override
@@ -171,8 +164,8 @@ class MqttProgressBar extends ProgressBar implements mqttHandler {
         Log.d(getClass().getCanonicalName(), "Progress:" + topic + ":" + msg.toString());
 
         try {
-            int i = (int) Float.parseFloat(msg.toString());
-            setProgress(i);
+            final float f = Float.parseFloat(msg.toString());
+            setProgress(translate(f));
         }
         catch (NumberFormatException ex) {
             Log.d(getClass().getCanonicalName(), "Bad number:" + msg.toString());
@@ -248,17 +241,14 @@ public class MainActivity extends ActionBarActivity {
 
         LinearLayout layout = (LinearLayout) findViewById(R.id.main_layout);
 
-        ProgressBar pb = new MqttProgressBar(this, handler, "node/jeenet/11/voltage");
+        ProgressBar pb = new MqttProgressBar(this, 0, 15, handler, "node/jeenet/11/voltage");
         layout.addView(pb);
-        pb.setMax(15);
-        pb.setProgress(0);
 
-        Button bt = new MqttButton(this, "A button", handler, "node/jeenet/6/state", "uif/button");
+        Button bt = new MqttButton(this, "A button", handler, "uif/button");
         layout.addView(bt);
 
-        pb = new MqttProgressBar(this, handler, "node/jeenet/8/voltage");
+        pb = new MqttProgressBar(this, 0, 50, handler, "node/jeenet/8/voltage");
         layout.addView(pb);
-        pb.setMax(500);
 
         CheckBox cb = new MqttCheckBox(this, handler, "node/jeenet/7/state");
         layout.addView(cb);
