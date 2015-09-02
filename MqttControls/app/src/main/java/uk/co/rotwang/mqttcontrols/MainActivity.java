@@ -22,7 +22,9 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
     /*
@@ -40,14 +42,14 @@ interface mqttHandler {
 class callBackHandler implements MqttCallback
 {
     MqttClient client;
-    Map<String, mqttHandler> map;
+    Map<String, List<mqttHandler>> map;
     Activity activity;
 
     public callBackHandler(Activity ctx, MqttClient mclient)
     {
         activity = ctx;
         client = mclient;
-        map = new HashMap<String, mqttHandler>();
+        map = new HashMap<String, List<mqttHandler>>();
     }
 
     class Runner implements Runnable {
@@ -60,11 +62,12 @@ class callBackHandler implements MqttCallback
         }
         @Override
         public void run() {
-            mqttHandler handler = map.get(topic);
-            if (handler != null) {
-                handler.onMessage(topic, message);
-            } else {
-                Log.d(getClass().getCanonicalName(), "no handler:" + topic + ":" + message.toString());
+            List<mqttHandler> handlers = map.get(topic);
+            if (handlers != null) {
+                for (int i = 0; i < handlers.size(); ++i) {
+                    mqttHandler handler = handlers.get(i);
+                    handler.onMessage(topic, message);
+                }
             }
         }
     };
@@ -89,14 +92,22 @@ class callBackHandler implements MqttCallback
 
     public void addHandler(String topic, mqttHandler handler)
     {
-        map.put(topic, handler);
-        try {
-            client.subscribe(topic);
-            Log.d(getClass().getCanonicalName(), "Set handler:" + topic + " " + handler);
+        List<mqttHandler> handlers = map.get(topic);
+
+        if (handlers == null) {
+            handlers = new ArrayList<mqttHandler>();
+            map.put(topic, handlers);
+
+            try {
+                client.subscribe(topic);
+                Log.d(getClass().getCanonicalName(), "Set handler:" + topic + " " + handler);
+            }
+            catch (MqttException e) {
+                Log.d(getClass().getCanonicalName(), "Subscribe Error:" + e.getCause());
+            }
         }
-        catch (MqttException e) {
-            Log.d(getClass().getCanonicalName(), "Subscribe Error:" + e.getCause());
-        }
+
+        handlers.add(handler);
     }
 
     public void sendMessage(String topic, String msg)
@@ -121,19 +132,21 @@ class callBackHandler implements MqttCallback
 class MqttButton extends Button implements View.OnClickListener {
     callBackHandler mqttHandler;
     String topic;
+    String data;
 
-    MqttButton(Context ctx, String label, callBackHandler handler, String wr_topic) {
+    MqttButton(Context ctx, callBackHandler handler, String label, String wr_topic, String tx_data) {
         super(ctx);
         setText(label);
         mqttHandler = handler;
         topic = wr_topic;
         setOnClickListener(this);
+        data = tx_data;
     }
 
     @Override
     public void onClick(View view) {
         Log.d(getClass().getCanonicalName(), "on click");
-        mqttHandler.sendMessage(topic, "1");
+        mqttHandler.sendMessage(topic, data);
     }
 };
 
@@ -143,9 +156,9 @@ class MqttButton extends Button implements View.OnClickListener {
 
 class MqttProgressBar extends ProgressBar implements mqttHandler {
 
-    float min, max;
+    double min, max;
 
-    MqttProgressBar(Context ctx, float fmin, float fmax, callBackHandler handler, String rd_topic) {
+    MqttProgressBar(Context ctx, callBackHandler handler, double fmin, double fmax, String rd_topic) {
         super(ctx, null, android.R.attr.progressBarStyleHorizontal);
         handler.addHandler(rd_topic, this);
         min = fmin;
@@ -222,6 +235,18 @@ class MqttTextView extends TextView implements mqttHandler {
 };
 
     /*
+     *  TextView
+     */
+
+class MqttLabel extends TextView {
+
+    public MqttLabel(Activity ctx, String text) {
+        super(ctx);
+        setText(text);
+    }
+};
+
+    /*
      *  Activity
      */
 
@@ -242,38 +267,59 @@ public class MainActivity extends ActionBarActivity {
             client = new MqttClient(conf.getUrl(), MqttClient.generateClientId(), null);
             handler = new callBackHandler(this, client);
             client.setCallback(handler);
-        }
-        catch (MqttException ex) {
+        } catch (MqttException ex) {
             ex.printStackTrace();
         }
 
         MqttConnectOptions options = new MqttConnectOptions();
-        try
-        {
+        try {
             client.connect(options);
-        }
-        catch (MqttException e) {
+        } catch (MqttException e) {
             Log.d(getClass().getCanonicalName(), "Connection attempt failed with reason code = " + e.getReasonCode() + ":" + e.getCause());
         }
 
+        loadControls(handler);
+    }
+
+    private View viewFactory(callBackHandler handler, String type, String params) {
+        if (type == "Button") {
+            String[] args = params.split(";");
+            return new MqttButton(this, handler, args[0], args[1], args[2]);
+        }
+        if (type == "ProgressBar") {
+            String[] args = params.split(";");
+            double min = Double.parseDouble(args[0]);
+            double max = Double.parseDouble(args[1]);
+            return new MqttProgressBar(this, handler, min, max, args[2]);
+        }
+        return null;
+    }
+
+    private void loadControls(callBackHandler handler)
+    {
         LinearLayout layout = (LinearLayout) findViewById(R.id.main_layout);
 
-        ProgressBar pb = new MqttProgressBar(this, 0, 15, handler, "node/jeenet/11/vcc");
-        layout.addView(pb);
+        View view = null;
 
-        Button bt = new MqttButton(this, "Radio", handler, "uif/button/1");
-        layout.addView(bt);
+        view = viewFactory(handler, "ProgressBar", "11;13;node/jeenet/11/voltage");
+        layout.addView(view);
 
-        pb = new MqttProgressBar(this, 0, 50, handler, "node/jeenet/8/voltage");
-        layout.addView(pb);
+        view = viewFactory(handler, "Button", "Radio;uif/button/1;1");
+        layout.addView(view);
+
+        view = viewFactory(handler, "ProgressBar", "0;50;node/jeenet/8/voltage");
+        layout.addView(view);
 
         CheckBox cb = new MqttCheckBox(this, handler, "node/jeenet/7/state");
         layout.addView(cb);
 
-        bt = new MqttButton(this, "Relay", handler, "uif/button/2");
-        layout.addView(bt);
+        view = viewFactory(handler, "Button", "Relay;uif/button/2;1");
+        layout.addView(view);
 
-        TextView tv = new MqttTextView(this, handler, "node/jeenet/11/voltage");
+        TextView tv = new MqttLabel(this, "Charlotte V");
+        layout.addView(tv);
+
+        tv = new MqttTextView(this, handler, "node/jeenet/11/voltage");
         layout.addView(tv);
     }
 
