@@ -63,40 +63,46 @@ class callBackHandler implements MqttCallback
      *  Button wrapper
      */
 
-class MqttButton extends Button implements mqttHandler {
+class MqttButton extends Button implements mqttHandler, View.OnClickListener {
     MqttClient client;
     String topic;
 
     MqttButton(Context ctx, MqttClient mclient, callBackHandler handler, String rd_topic, String wr_topic) {
         super(ctx);
         client = mclient;
-        handler.addHandler(rd_topic, this);
         topic = wr_topic;
 
-        setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                // Perform action on click
-                Log.d(getClass().getCanonicalName(), "on click" + client);
-
-                String msg = "1";
-                try
-                {
-                    MqttMessage message = new MqttMessage();
-                    message.setPayload(msg.getBytes());
-                    client.publish(topic, message);
-                }
-                catch (MqttException e)
-                {
-                    Log.d(getClass().getCanonicalName(), "Publish failed with reason code = " + e.getReasonCode());
-                }
-            }
-        });
-
+        if (rd_topic != null) {
+            handler.addHandler(rd_topic, this);
+        }
+        
+        setOnClickListener(this);
     }
 
+    @Override
+    public void onClick(View view) {
+        Log.d(getClass().getCanonicalName(), "on click" + client);
+        this.sendMessage("1");
+    }
+
+    @Override
     public void onMessage(String topic, MqttMessage msg)
     {
         Log.d(getClass().getCanonicalName(), "Button:" + topic + ":" + msg.toString());
+    }
+
+    public void sendMessage(String msg)
+    {
+        try
+        {
+            MqttMessage message = new MqttMessage();
+            message.setPayload(msg.getBytes());
+            client.publish(topic, message);
+        }
+        catch (MqttException e)
+        {
+            Log.d(getClass().getCanonicalName(), "Publish failed with reason code = " + e.getReasonCode());
+        }
     }
 };
 
