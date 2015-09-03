@@ -6,4 +6,6 @@
         android:orderInCategory="100" app:showAsAction="never" />
     <item android:id="@+id/reload" android:title="@string/reload"
         android:orderInCategory="100" app:showAsAction="never" />
+    <item android:id="@+id/exit" android:title="@string/exit"
+        android:orderInCategory="100" app:showAsAction="never" />
 </menu>

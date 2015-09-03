@@ -42,6 +42,7 @@ import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -68,6 +69,21 @@ class CallBackHandler implements MqttCallback
         activity = ctx;
         client = mclient;
         map = new HashMap<String, List<mqttHandler>>();
+    }
+
+    public void unsubscribe()
+    {
+        Iterator it = map.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry)it.next();
+            String topic = (String) pair.getKey();
+            //Log.d(getClass().getCanonicalName(), "Unsubscribe:" + topic);
+            try {
+                client.unsubscribe(topic);
+            } catch (MqttException e) {
+                Log.d(getClass().getCanonicalName(), "Unsubscribe Error:" + topic + " " + e.getCause());
+            }
+        }
     }
 
     class Runner implements Runnable {
@@ -554,6 +570,12 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
             return true;
         }
 
+        if (id == R.id.exit) {
+            toast("Disconnecting from MQTT feed");
+            finish();
+            return true;
+        }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -640,6 +662,12 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
         //  Fetch and load the controls config
         UrlFetcher fetcher = new UrlFetcher(this, conf.url, this);
         fetcher.start();
+    }
+
+    @Override
+    protected void onDestroy() {
+        handler.unsubscribe();
+        super.onDestroy();
     }
 }
 
