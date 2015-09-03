@@ -25,6 +25,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -355,12 +361,101 @@ class MqttFactory {
 };
 
     /*
+     *  Fetch data from URL in a thread
+     */
+
+interface OnUrl
+{
+    public void onUrl(String data);
+};
+
+class UrlFetcher implements Runnable {
+
+    private String url;
+    private OnUrl handler;
+    private Activity activity;
+
+    public UrlFetcher(Activity ctx, String u, OnUrl callback)
+    {
+        activity = ctx;
+        url = u;
+        handler = callback;
+    }
+
+    public void start()
+    {
+        Thread thread = new Thread(this);
+        thread.setPriority(Thread.MIN_PRIORITY);
+        thread.start();
+    }
+
+    private String data = null;
+
+    @Override
+    public void run() {
+        try {
+            data = openHttpConnection(url);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Make sure the callback is run on the UI thread
+        Runnable runner = new Runnable() {
+            @Override
+            public void run() {
+                handler.onUrl(data);
+            }
+        };
+        activity.runOnUiThread(runner);
+    }
+
+    private String openHttpConnection(String urlString) throws IOException
+    {
+        InputStream in = null;
+        int response = -1;
+
+        URL url = new URL(urlString);
+        URLConnection conn = url.openConnection();
+
+        if (!(conn instanceof HttpURLConnection))
+            throw new IOException("Not an HTTP connection");
+
+        try{
+            HttpURLConnection httpConn = (HttpURLConnection) conn;
+            httpConn.setAllowUserInteraction(false);
+            httpConn.setInstanceFollowRedirects(true);
+            httpConn.setRequestMethod("GET");
+            httpConn.connect();
+
+            response = httpConn.getResponseCode();
+            if (response == HttpURLConnection.HTTP_OK) {
+                in = httpConn.getInputStream();
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new IOException("Error connecting:" + ex.toString());
+        }
+
+        //  Read from stream, convert to string
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        int length = 0;
+        while ((length = in.read(buffer)) != -1) {
+            baos.write(buffer, 0, length);
+        }
+        return new String(baos.toByteArray());
+    }
+};
+
+    /*
      *  Activity
      */
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends ActionBarActivity implements OnUrl {
 
     MqttClient client;
+    CallBackHandler handler = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -370,7 +465,6 @@ public class MainActivity extends ActionBarActivity {
         MqttSettings conf = new MqttSettings();
         conf.read(this);
 
-        CallBackHandler handler = null;
         try {
             client = new MqttClient(conf.getUrl(), MqttClient.generateClientId(), null);
             handler = new CallBackHandler(this, client);
@@ -386,12 +480,14 @@ public class MainActivity extends ActionBarActivity {
             Log.d(getClass().getCanonicalName(), "Connection attempt failed with reason code = " + e.getReasonCode() + ":" + e.getCause());
         }
 
-        loadControls(handler, config);
+        //  Fetch and load the controls config
+        UrlFetcher fetcher = new UrlFetcher(this, conf.url, this);
+        fetcher.start();
     }
 
     private String config = "[[\"TextLabel\", {\"text\": \"Charlotte Battery Voltage\"}], [\"ProgressBar\", {\"topic\": \"home/jeenet/voltagedev_11\", \"field\": \"voltage\", \"max\": 13.0, \"min\": 11.0}], [\"TextView\", {\"topic\": \"home/jeenet/voltagedev_11\", \"field\": \"voltage\"}], [\"Button\", {\"topic\": \"uif/button/1\", \"text\": \"Radio Relay\", \"send\": \"1\"}], [\"CheckBox\", {\"topic\": \"home/jeenet/relaydev_7\", \"field\": \"state\"}], [\"TextLabel\", {\"text\": \"Street Signal (random)\"}], [\"ProgressBar\", {\"topic\": \"node/jeenet/8/voltage\", \"field\": null, \"max\": 50.0, \"min\": 0.0}], [\"Button\", {\"topic\": \"uif/button/2\", \"text\": \"Relay\", \"send\": \"1\"}], [\"TextLabel\", {\"text\": \"Gas Meter (sector)\"}], [\"ProgressBar\", {\"topic\": \"node/gas/sector\", \"field\": null, \"max\": 0.0, \"min\": 63.0}], [\"TextLabel\", {\"text\": \"Export\"}], [\"ProgressBar\", {\"topic\": \"home/power\", \"field\": \"power\", \"max\": -3000.0, \"min\": 0.0}], [\"TextLabel\", {\"text\": \"Import\"}], [\"ProgressBar\", {\"topic\": \"home/power\", \"field\": \"power\", \"max\": 3000.0, \"min\": 0.0}], [\"TextView\", {\"topic\": \"home/power\", \"field\": \"power\"}]]";
 
-    private void loadControls(CallBackHandler handler, String conf)
+    private void loadControls(String conf)
     {
         LinearLayout layout = (LinearLayout) findViewById(R.id.main_layout);
 
@@ -449,6 +545,12 @@ public class MainActivity extends ActionBarActivity {
     public void actionSettings(View view) {
         Intent intent = new Intent(this, MqttSettingsActivity.class);
         startActivity(intent);
+    }
+
+    @Override
+    public void onUrl(String data) {
+        Log.d(getClass().getCanonicalName(), "Got data:" + data);
+        loadControls(data);
     }
 }
 
