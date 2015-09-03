@@ -136,7 +136,7 @@ class CallBackHandler implements MqttCallback
 };
 
     /*
-     *  Parser : optionaly extracts fields from JSON string
+     *  Parser : optionally extracts fields from JSON string
      */
 
 class Picker {
@@ -157,9 +157,9 @@ class Picker {
             return reader.getString(field);
         }
         catch (JSONException ex) {
-            Log.d(getClass().getCanonicalName(), "JSON Error:" + ex.getCause());
+            Log.d(getClass().getCanonicalName(), ex.toString() + ":" + text);
         }
-        return "";
+        return text;
     }
 };
 
@@ -229,7 +229,7 @@ class MqttProgressBar extends ProgressBar implements mqttHandler {
             setProgress(translate(f));
         }
         catch (NumberFormatException ex) {
-            Log.d(getClass().getCanonicalName(), "Bad number:" + msg.toString());
+            Log.d(getClass().getCanonicalName(), "Bad number:" + msg.toString() + " " + ex.getCause());
         }
     }
 
@@ -270,7 +270,7 @@ class MqttCheckBox extends CheckBox implements mqttHandler {
             setChecked(i != 0);
         }
         catch (NumberFormatException ex) {
-            Log.d(getClass().getCanonicalName(), "Bad number:" + msg.toString());
+            Log.d(getClass().getCanonicalName(), "Bad number:" + msg.toString() + " " + ex.getCause());
         }
     }
 
@@ -484,8 +484,6 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
         UrlFetcher fetcher = new UrlFetcher(this, conf.url, this);
         fetcher.start();
     }
-
-    private String config = "[[\"TextLabel\", {\"text\": \"Charlotte Battery Voltage\"}], [\"ProgressBar\", {\"topic\": \"home/jeenet/voltagedev_11\", \"field\": \"voltage\", \"max\": 13.0, \"min\": 11.0}], [\"TextView\", {\"topic\": \"home/jeenet/voltagedev_11\", \"field\": \"voltage\"}], [\"Button\", {\"topic\": \"uif/button/1\", \"text\": \"Radio Relay\", \"send\": \"1\"}], [\"CheckBox\", {\"topic\": \"home/jeenet/relaydev_7\", \"field\": \"state\"}], [\"TextLabel\", {\"text\": \"Street Signal (random)\"}], [\"ProgressBar\", {\"topic\": \"node/jeenet/8/voltage\", \"field\": null, \"max\": 50.0, \"min\": 0.0}], [\"Button\", {\"topic\": \"uif/button/2\", \"text\": \"Relay\", \"send\": \"1\"}], [\"TextLabel\", {\"text\": \"Gas Meter (sector)\"}], [\"ProgressBar\", {\"topic\": \"node/gas/sector\", \"field\": null, \"max\": 0.0, \"min\": 63.0}], [\"TextLabel\", {\"text\": \"Export\"}], [\"ProgressBar\", {\"topic\": \"home/power\", \"field\": \"power\", \"max\": -3000.0, \"min\": 0.0}], [\"TextLabel\", {\"text\": \"Import\"}], [\"ProgressBar\", {\"topic\": \"home/power\", \"field\": \"power\", \"max\": 3000.0, \"min\": 0.0}], [\"TextView\", {\"topic\": \"home/power\", \"field\": \"power\"}]]";
 
     private void loadControls(String conf)
     {
