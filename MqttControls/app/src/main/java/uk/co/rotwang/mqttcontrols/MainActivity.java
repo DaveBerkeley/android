@@ -279,6 +279,7 @@ class MqttCheckBox extends CheckBox implements mqttHandler {
     public MqttCheckBox(Context ctx, CallBackHandler handler, String topic, String field) {
 
         super(ctx);
+        setEnabled(false);
         handler.addHandler(topic, this);
         picker = new Picker(field);
     }
@@ -314,9 +315,13 @@ class MqttCheckBox extends CheckBox implements mqttHandler {
 class MqttTextView extends TextView implements mqttHandler {
 
     Picker picker;
+    String pre_text;
+    String post_text;
 
-    public MqttTextView(Activity ctx, CallBackHandler handler, String topic, String field) {
+    public MqttTextView(Activity ctx, CallBackHandler handler, String topic, String field, String pre, String post) {
         super(ctx);
+        pre_text = (pre == null) ? "" : pre;
+        post_text = (post == null) ? "" : post;
         handler.addHandler(topic, this);
         picker = new Picker(field);
     }
@@ -326,14 +331,24 @@ class MqttTextView extends TextView implements mqttHandler {
     {
         //Log.d(getClass().getCanonicalName(), topic + ":" + msg.toString());
         final String s = picker.pick(msg.toString());
-        setText(s);
+        setText(pre_text + s + post_text);
+    }
+
+    static String getString(JSONObject obj, String key) throws JSONException
+    {
+        if (obj.has(key)) {
+            return obj.getString(key);
+        }
+        return null;
     }
 
     static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
     {
         String topic = obj.getString("topic");
         String field = obj.getString("field");
-        return new MqttTextView(ctx, handler, topic, field);
+        String pre = getString(obj, "pre");
+        String post = getString(obj, "post");
+        return new MqttTextView(ctx, handler, topic, field, pre, post);
     }
 };
 
