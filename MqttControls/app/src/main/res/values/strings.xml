@@ -6,4 +6,5 @@
     <string name="button_send">The Button</string>
     <string name="title_activity_mqtt_settings">MqttSettings</string>
     <string name="save_mqtt_settings">Save</string>
+    <string name="reload">Reload</string>
 </resources>

@@ -492,9 +492,7 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
             Log.d(getClass().getCanonicalName(), "Connection attempt failed with reason code = " + e.getReasonCode() + ":" + e.getCause());
         }
 
-        //  Fetch and load the controls config
-        UrlFetcher fetcher = new UrlFetcher(this, conf.url, this);
-        fetcher.start();
+        reload();
     }
 
     private boolean loadControls(String conf)
@@ -546,9 +544,13 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             actionSettings(null);
+            return true;
+        }
+
+        if (id == R.id.reload) {
+            reload();
             return true;
         }
 
@@ -630,6 +632,14 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
         if (loadControls(data)) {
             saveConfigToCache(data);
         }
+    }
+
+    private void reload() {
+        MqttSettings conf = new MqttSettings();
+        conf.read(this);
+        //  Fetch and load the controls config
+        UrlFetcher fetcher = new UrlFetcher(this, conf.url, this);
+        fetcher.start();
     }
 }
 
