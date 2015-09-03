@@ -14,6 +14,7 @@ import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
@@ -26,11 +27,19 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -412,7 +421,6 @@ class UrlFetcher implements Runnable {
     private String openHttpConnection(String urlString) throws IOException
     {
         InputStream in = null;
-        int response = -1;
 
         URL url = new URL(urlString);
         URLConnection conn = url.openConnection();
@@ -427,7 +435,7 @@ class UrlFetcher implements Runnable {
             httpConn.setRequestMethod("GET");
             httpConn.connect();
 
-            response = httpConn.getResponseCode();
+            int response = httpConn.getResponseCode();
             if (response == HttpURLConnection.HTTP_OK) {
                 in = httpConn.getInputStream();
             }
@@ -437,14 +445,18 @@ class UrlFetcher implements Runnable {
             throw new IOException("Error connecting:" + ex.toString());
         }
 
+        if (in == null) {
+            throw new IOException("Error opening url");
+        }
+
         //  Read from stream, convert to string
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ByteArrayOutputStream writer = new ByteArrayOutputStream();
         byte[] buffer = new byte[1024];
         int length = 0;
         while ((length = in.read(buffer)) != -1) {
-            baos.write(buffer, 0, length);
+            writer.write(buffer, 0, length);
         }
-        return new String(baos.toByteArray());
+        return new String(writer.toByteArray());
     }
 };
 
@@ -485,7 +497,7 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
         fetcher.start();
     }
 
-    private void loadControls(String conf)
+    private boolean loadControls(String conf)
     {
         LinearLayout layout = (LinearLayout) findViewById(R.id.main_layout);
 
@@ -493,6 +505,9 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
         if (layout.getChildCount() > 0) {
             layout.removeAllViews();
         }
+
+        if (conf == null)
+            return false;
 
         try {
             JSONArray reader = new JSONArray(conf);
@@ -512,8 +527,9 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
         } catch (JSONException e) {
             e.printStackTrace();
             // TODO : toast
-            return;
+            return false;
         }
+        return true;
     }
 
     @Override
@@ -545,10 +561,75 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
         startActivity(intent);
     }
 
+    private void toast(CharSequence text) {
+        // Show Toast
+        int duration = Toast.LENGTH_SHORT;
+        Toast toast = Toast.makeText(this, text, duration);
+        toast.show();
+    }
+
+        /*
+         *  Save / Load config data to cache
+         *  so we have a default when the source URI is not readable.
+         */
+
+    final private String cachePath = "datacahe.txt";
+    final private String encoding = "UTF-8";
+
+    private boolean saveConfigToCache(String data) {
+        try {
+            FileOutputStream file = openFileOutput(cachePath, MODE_PRIVATE);
+            file.write(data.getBytes(Charset.forName(encoding)));
+            return true;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    private String loadConfigFromCache() {
+        try {
+            FileInputStream file = openFileInput(cachePath);
+            Reader r = new InputStreamReader(file, encoding);
+            StringBuilder sb = new StringBuilder();
+            char[] buf = new char[1024];
+            int amt = r.read(buf);
+            while(amt > 0) {
+                sb.append(buf, 0, amt);
+                amt = r.read(buf);
+            }
+            return sb.toString();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // Callback when data is fetched from URL
     @Override
     public void onUrl(String data) {
-        Log.d(getClass().getCanonicalName(), "Got data:" + data);
-        loadControls(data);
+        //Log.d(getClass().getCanonicalName(), "Got data:" + data);
+
+        if (data == null) {
+            // try to read from cache
+            toast("Read data from cache");
+            data = loadConfigFromCache();
+        }
+
+        if (data == null) {
+            toast("Unable to read config");
+            return;
+        }
+
+        if (loadControls(data)) {
+            saveConfigToCache(data);
+        }
     }
 }
 
