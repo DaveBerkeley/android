@@ -21,6 +21,7 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -94,6 +95,7 @@ class CallBackHandler implements MqttCallback
 
     public void addHandler(String topic, mqttHandler handler)
     {
+        Log.d(getClass().getCanonicalName(), "Add handler " + topic + ":" + handler);
         List<mqttHandler> handlers = map.get(topic);
 
         if (handlers == null) {
@@ -128,7 +130,7 @@ class CallBackHandler implements MqttCallback
 };
 
     /*
-     *  Parser
+     *  Parser : optionaly extracts fields from JSON string
      */
 
 class Picker {
@@ -140,8 +142,9 @@ class Picker {
     }
 
     public String pick(String text) {
-        if (field == null)
+        if (field == null) {
             return text;
+        }
 
         try {
             JSONObject reader = new JSONObject(text);
@@ -150,7 +153,7 @@ class Picker {
         catch (JSONException ex) {
             Log.d(getClass().getCanonicalName(), "JSON Error:" + ex.getCause());
         }
-        return null;
+        return "";
     }
 };
 
@@ -163,19 +166,27 @@ class MqttButton extends Button implements View.OnClickListener {
     String topic;
     String data;
 
-    MqttButton(Context ctx, CallBackHandler handler, String label, String wr_topic, String tx_data) {
+    MqttButton(Context ctx, CallBackHandler handler, String label, String wr_topic, String send) {
         super(ctx);
         setText(label);
         mqttHandler = handler;
         topic = wr_topic;
         setOnClickListener(this);
-        data = tx_data;
+        data = send;
     }
 
     @Override
     public void onClick(View view) {
         //Log.d(getClass().getCanonicalName(), "on click");
         mqttHandler.sendMessage(topic, data);
+    }
+
+    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    {
+        String text = obj.getString("text");
+        String topic = obj.getString("topic");
+        String send = obj.getString("send");
+        return new MqttButton(ctx, handler, text, topic, send);
     }
 };
 
@@ -188,9 +199,9 @@ class MqttProgressBar extends ProgressBar implements mqttHandler {
     double min, max;
     Picker picker;
 
-    MqttProgressBar(Context ctx, CallBackHandler handler, double fmin, double fmax, String rd_topic, String field) {
+    MqttProgressBar(Context ctx, CallBackHandler handler, double fmin, double fmax, String topic, String field) {
         super(ctx, null, android.R.attr.progressBarStyleHorizontal);
-        handler.addHandler(rd_topic, this);
+        handler.addHandler(topic, this);
         min = fmin;
         max = fmax;
         picker = new Picker(field);
@@ -214,6 +225,15 @@ class MqttProgressBar extends ProgressBar implements mqttHandler {
         catch (NumberFormatException ex) {
             Log.d(getClass().getCanonicalName(), "Bad number:" + msg.toString());
         }
+    }
+
+    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    {
+        double min = obj.getDouble("min");
+        double max = obj.getDouble("max");
+        String topic = obj.getString("topic");
+        String field = obj.getString("field");
+        return new MqttProgressBar(ctx, handler, min, max, topic, field);
     }
 };
 
@@ -247,6 +267,13 @@ class MqttCheckBox extends CheckBox implements mqttHandler {
             Log.d(getClass().getCanonicalName(), "Bad number:" + msg.toString());
         }
     }
+
+    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    {
+        String topic = obj.getString("topic");
+        String field = obj.getString("field");
+        return new MqttCheckBox(ctx, handler, topic, field);
+    }
 };
 
     /*
@@ -270,6 +297,13 @@ class MqttTextView extends TextView implements mqttHandler {
         final String s = picker.pick(msg.toString());
         setText(s);
     }
+
+    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    {
+        String topic = obj.getString("topic");
+        String field = obj.getString("field");
+        return new MqttTextView(ctx, handler, topic, field);
+    }
 };
 
     /*
@@ -285,6 +319,38 @@ class MqttLabel extends TextView {
     public MqttLabel(Activity ctx, String text) {
         super(ctx);
         setText(text);
+    }
+
+    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    {
+        String text = obj.getString("text");
+        return new MqttLabel(ctx, text);
+    }
+};
+
+    /*
+     *  Factory method to construct View classes
+     */
+
+class MqttFactory {
+    static public View create(Activity ctx, CallBackHandler handler, String type, JSONObject obj) throws JSONException
+    {
+        if (type.equals("TextLabel")) {
+            return MqttLabel.create(ctx, handler, obj);
+        }
+        if (type.equals("TextView")) {
+            return MqttTextView.create(ctx, handler, obj);
+        }
+        if (type.equals("CheckBox")) {
+            return MqttCheckBox.create(ctx, handler, obj);
+        }
+        if (type.equals("ProgressBar")) {
+            return MqttProgressBar.create(ctx, handler, obj);
+        }
+        if (type.equals("Button")) {
+            return MqttButton.create(ctx, handler, obj);
+        }
+        return null;
     }
 };
 
@@ -320,97 +386,40 @@ public class MainActivity extends ActionBarActivity {
             Log.d(getClass().getCanonicalName(), "Connection attempt failed with reason code = " + e.getReasonCode() + ":" + e.getCause());
         }
 
-        loadControls(handler);
+        loadControls(handler, config);
     }
 
-    private View viewFactory(CallBackHandler handler, String type, String params) {
-        if (type.equals("Button")) {
-            String[] args = params.split(";");
-            return new MqttButton(this, handler, args[0], args[1], args[2]);
-        }
-        if (type.equals("ProgressBar")) {
-            String[] args = params.split(";");
-            double min = Double.parseDouble(args[0]);
-            double max = Double.parseDouble(args[1]);
-            String field = null;
-            if (args.length > 3)
-                field = args[3];
-            return new MqttProgressBar(this, handler, min, max, args[2], field);
-        }
-        if (type.equals("CheckBox")) {
-            String[] args = params.split(";");
-            String field = null;
-            if (args.length > 1)
-                field = args[1];
-            return new MqttCheckBox(this, handler, args[0], field);
-        }
-        if (type.equals("TextView")) {
-            String[] args = params.split(";");
-            String field = null;
-            if (args.length > 1)
-                field = args[1];
-            return new MqttTextView(this, handler, args[0], field);
-        }
-        if (type.equals("TextLabel")) {
-            String[] args = params.split(";");
-            return new MqttLabel(this, args[0]);
-        }
-        return null;
-    }
+    private String config = "[[\"TextLabel\", {\"text\": \"Charlotte Battery Voltage\"}], [\"ProgressBar\", {\"topic\": \"home/jeenet/voltagedev_11\", \"field\": \"voltage\", \"max\": 13.0, \"min\": 11.0}], [\"TextView\", {\"topic\": \"home/jeenet/voltagedev_11\", \"field\": \"voltage\"}], [\"Button\", {\"topic\": \"uif/button/1\", \"text\": \"Radio Relay\", \"send\": \"1\"}], [\"CheckBox\", {\"topic\": \"home/jeenet/relaydev_7\", \"field\": \"state\"}], [\"TextLabel\", {\"text\": \"Street Signal (random)\"}], [\"ProgressBar\", {\"topic\": \"node/jeenet/8/voltage\", \"field\": null, \"max\": 50.0, \"min\": 0.0}], [\"Button\", {\"topic\": \"uif/button/2\", \"text\": \"Relay\", \"send\": \"1\"}], [\"TextLabel\", {\"text\": \"Gas Meter (sector)\"}], [\"ProgressBar\", {\"topic\": \"node/gas/sector\", \"field\": null, \"max\": 0.0, \"min\": 63.0}], [\"TextLabel\", {\"text\": \"Export\"}], [\"ProgressBar\", {\"topic\": \"home/power\", \"field\": \"power\", \"max\": -3000.0, \"min\": 0.0}], [\"TextLabel\", {\"text\": \"Import\"}], [\"ProgressBar\", {\"topic\": \"home/power\", \"field\": \"power\", \"max\": 3000.0, \"min\": 0.0}], [\"TextView\", {\"topic\": \"home/power\", \"field\": \"power\"}]]";
 
-    private void loadControls(CallBackHandler handler)
+    private void loadControls(CallBackHandler handler, String conf)
     {
         LinearLayout layout = (LinearLayout) findViewById(R.id.main_layout);
 
-        View view = null;
+        // Remove existing views
+        if (layout.getChildCount() > 0) {
+            layout.removeAllViews();
+        }
 
-        view = viewFactory(handler, "TextLabel", "Charlotte Battery Voltage");
-        layout.addView(view);
+        try {
+            JSONArray reader = new JSONArray(conf);
+            // iterate through controls
+            for (int i = 0; i < reader.length(); ++i) {
+                JSONArray item = reader.getJSONArray(i);
+                assert(item.length() == 2);
+                String type = item.getString(0);
+                JSONObject dict = item.getJSONObject(1);
+                Log.d(getClass().getCanonicalName(), "Create " + type + " : " + dict);
 
-        view = viewFactory(handler, "ProgressBar", "11;13;home/jeenet/voltagedev_11;voltage");
-        layout.addView(view);
-
-        view = viewFactory(handler, "TextView", "home/jeenet/voltagedev_11;voltage");
-        layout.addView(view);
-
-        view = viewFactory(handler, "Button", "Radio Relay;uif/button/1;1");
-        layout.addView(view);
-
-        view = viewFactory(handler, "CheckBox", "home/jeenet/relaydev_7;state");
-        layout.addView(view);
-
-        view = viewFactory(handler, "TextLabel", "Street Signal (random)");
-        layout.addView(view);
-
-        view = viewFactory(handler, "ProgressBar", "0;50;node/jeenet/8/voltage");
-        layout.addView(view);
-
-        view = viewFactory(handler, "TextView", "node/jeenet/8/time");
-        layout.addView(view);
-
-        view = viewFactory(handler, "Button", "Relay;uif/button/2;1");
-        layout.addView(view);
-
-        view = viewFactory(handler, "TextLabel", "Gas Meter (sector)");
-        layout.addView(view);
-
-        view = viewFactory(handler, "ProgressBar", "63;0;node/gas/sector");
-        layout.addView(view);
-
-        view = viewFactory(handler, "TextLabel", "Export");
-        layout.addView(view);
-
-        view = viewFactory(handler, "ProgressBar", "0;-3000;home/power;power");
-        layout.addView(view);
-
-        view = viewFactory(handler, "TextLabel", "Import");
-        layout.addView(view);
-
-        view = viewFactory(handler, "ProgressBar", "0;3000;home/power;power");
-        layout.addView(view);
-
-        view = viewFactory(handler, "TextView", "home/power;power");
-        layout.addView(view);
+                View view = MqttFactory.create(this, handler, type, dict);
+                if (view != null) {
+                    layout.addView(view);
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+            // TODO : toast
+            return;
+        }
     }
 
     @Override
