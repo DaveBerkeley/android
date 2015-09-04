@@ -578,6 +578,26 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
         reload();
     }
 
+    private void loadControls(LinearLayout layout, JSONArray reader) throws JSONException {
+        // iterate through controls
+        for (int i = 0; i < reader.length(); ++i) {
+            JSONArray item = reader.getJSONArray(i);
+            if (item.length() != 2) {
+                throw new JSONException("bad data");
+            }
+            String type = item.getString(0);
+            JSONObject dict = item.getJSONObject(1);
+            Log.d(getClass().getCanonicalName(), "Create " + type + " : " + dict);
+
+            View view = MqttFactory.create(this, handler, type, dict);
+            if (view != null) {
+                layout.addView(view);
+            } else {
+                Log.d(getClass().getCanonicalName(), "Error creating object");
+            }
+        }
+    }
+
     private boolean loadControls(String conf)
     {
         LinearLayout layout = (LinearLayout) findViewById(R.id.main_layout);
@@ -592,22 +612,14 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
 
         try {
             JSONArray reader = new JSONArray(conf);
-            // iterate through controls
-            for (int i = 0; i < reader.length(); ++i) {
-                JSONArray item = reader.getJSONArray(i);
-                assert(item.length() == 2);
-                String type = item.getString(0);
-                JSONObject dict = item.getJSONObject(1);
-                Log.d(getClass().getCanonicalName(), "Create " + type + " : " + dict);
-
-                View view = MqttFactory.create(this, handler, type, dict);
-                if (view != null) {
-                    layout.addView(view);
-                }
-            }
+            loadControls(layout, reader);
         } catch (JSONException e) {
             e.printStackTrace();
-            // TODO : toast
+            toast("Error reading config");
+            return false;
+        } catch (Exception e) {
+            e.printStackTrace();
+            toast("Error reading config");
             return false;
         }
         return true;
@@ -625,25 +637,23 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        if (id == R.id.action_settings) {
-            actionSettings(null);
-            return true;
+        switch (item.getItemId())
+        {
+            case R.id.action_settings : {
+                actionSettings(null);
+                return true;
+            }
+            case R.id.reload : {
+                reload();
+                return true;
+            }
+            case R.id.exit : {
+                toast("Disconnecting from MQTT feed");
+                finish();
+                return true;
+            }
+            default : return super.onOptionsItemSelected(item);
         }
-
-        if (id == R.id.reload) {
-            reload();
-            return true;
-        }
-
-        if (id == R.id.exit) {
-            toast("Disconnecting from MQTT feed");
-            finish();
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 
     /** Called when the user clicks the Settings button */
