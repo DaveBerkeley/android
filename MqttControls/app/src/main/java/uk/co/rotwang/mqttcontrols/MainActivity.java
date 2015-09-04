@@ -9,8 +9,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.content.Intent;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.GridLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
@@ -28,7 +30,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -136,7 +137,7 @@ class CallBackHandler implements MqttCallback
 
             try {
                 client.subscribe(topic);
-                Log.d(getClass().getCanonicalName(), "Set handler:" + topic + " " + handler);
+                Log.d(getClass().getCanonicalName(), "Subscribe:" + topic + " " + handler);
             }
             catch (MqttException e) {
                 Log.d(getClass().getCanonicalName(), "Subscribe Error:" + e.getCause());
@@ -578,20 +579,36 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
         reload();
     }
 
-    private void loadControls(LinearLayout layout, JSONArray reader) throws JSONException {
+    private void loadControls(ViewGroup group, JSONArray reader) throws JSONException {
         // iterate through controls
         for (int i = 0; i < reader.length(); ++i) {
             JSONArray item = reader.getJSONArray(i);
             if (item.length() != 2) {
+                // should always have ["name",{ dict },] pairs
                 throw new JSONException("bad data");
             }
             String type = item.getString(0);
             JSONObject dict = item.getJSONObject(1);
             Log.d(getClass().getCanonicalName(), "Create " + type + " : " + dict);
 
+            if (type.equals("GridView")) {
+                GridLayout grid = new GridLayout(this);
+                final int rows = dict.getInt("rows");
+                final int cols = dict.getInt("cols");
+                grid.setRowCount(rows);
+                grid.setColumnCount(cols);
+
+                group.addView(grid);
+
+                // recurse to fill the grid
+                JSONArray elements = dict.getJSONArray("elements");
+                loadControls(grid, elements);
+                continue;
+            }
+
             View view = MqttFactory.create(this, handler, type, dict);
             if (view != null) {
-                layout.addView(view);
+                group.addView(view);
             } else {
                 Log.d(getClass().getCanonicalName(), "Error creating object");
             }
