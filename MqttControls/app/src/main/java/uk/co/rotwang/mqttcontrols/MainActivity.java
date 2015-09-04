@@ -2,6 +2,9 @@ package uk.co.rotwang.mqttcontrols;
 
 import android.app.Activity;
 import android.content.Context;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -12,7 +15,6 @@ import android.content.Intent;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.GridLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
@@ -361,6 +363,62 @@ class MqttCheckBox extends CheckBox implements mqttHandler {
 };
 
     /*
+     *  Bell alarm.
+     */
+
+class MqttBell extends View implements mqttHandler {
+
+    Picker picker;
+    Context context;
+    int last_value;
+    boolean first = true;
+
+    public MqttBell(Context ctx, CallBackHandler handler, String topic, String field) {
+
+        super(ctx);
+        context = ctx;
+        handler.addHandler(topic, this);
+        picker = new Picker(field);
+    }
+
+    @Override
+    public void onMessage(String topic, MqttMessage msg)
+    {
+        //Log.d(getClass().getCanonicalName(), topic + ":" + msg.toString());
+
+        try {
+            final String s = picker.pick(msg.toString());
+            final int i = (int) Float.parseFloat(s);
+            //Log.d(getClass().getCanonicalName(), "Got number:" + i);
+
+            if (first == true) {
+                last_value = i;
+                first = false;
+                return;
+            }
+
+            if (i != last_value) {
+                Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                Ringtone r = RingtoneManager.getRingtone(context, notification);
+                r.play();
+            }
+
+            last_value = i;
+        }
+        catch (NumberFormatException ex) {
+            Log.d(getClass().getCanonicalName(), "Bad number:" + msg.toString() + " " + ex.getCause());
+        }
+    }
+
+    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    {
+        String topic = obj.getString("topic");
+        String field = obj.getString("field");
+        return new MqttBell(ctx, handler, topic, field);
+    }
+};
+
+    /*
      *  TextView
      */
 
@@ -450,6 +508,9 @@ class MqttFactory {
         }
         if (type.equals("SeekBar")) {
             return MqttSeekBar.create(ctx, handler, obj);
+        }
+        if (type.equals("Bell")) {
+            return MqttBell.create(ctx, handler, obj);
         }
         return null;
     }
