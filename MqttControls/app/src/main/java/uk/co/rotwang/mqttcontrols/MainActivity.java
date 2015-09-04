@@ -16,6 +16,8 @@ import android.widget.GridLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -579,6 +581,41 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
         reload();
     }
 
+    class Table extends TableLayout {
+        final int cols;
+        int row;
+        Activity context;
+        TableRow tr;
+
+        public Table(Activity ctx, int r, int c)
+        {
+            super(ctx);
+            context = ctx;
+            cols = c;
+            row = 0;
+        }
+
+        public void addView(View view)
+        {
+            if (row == 0) {
+                //  Added new row
+                tr = new TableRow(context);
+                super.addView(tr);
+            }
+
+            row += 1;
+            if (row == cols) {
+                row = 0;
+            }
+
+            // Set weight so all colums are equal.
+            TableRow.LayoutParams layout = new TableRow.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT);
+            layout.weight = (float) (1.0 / cols);
+            view.setLayoutParams(layout);
+            tr.addView(view);
+        }
+    };
+
     private void loadControls(ViewGroup group, JSONArray reader) throws JSONException {
         // iterate through controls
         for (int i = 0; i < reader.length(); ++i) {
@@ -592,11 +629,9 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
             Log.d(getClass().getCanonicalName(), "Create " + type + " : " + dict);
 
             if (type.equals("GridView")) {
-                GridLayout grid = new GridLayout(this);
                 final int rows = dict.getInt("rows");
                 final int cols = dict.getInt("cols");
-                grid.setRowCount(rows);
-                grid.setColumnCount(cols);
+                Table grid = new Table(this, rows, cols);
 
                 group.addView(grid);
 
