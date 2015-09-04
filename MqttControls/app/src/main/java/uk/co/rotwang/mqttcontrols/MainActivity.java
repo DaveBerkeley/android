@@ -13,6 +13,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -269,6 +270,54 @@ class MqttProgressBar extends ProgressBar implements mqttHandler {
 };
 
     /*
+     *  Seek Bar
+     */
+
+class MqttSeekBar extends SeekBar implements SeekBar.OnSeekBarChangeListener {
+
+    double min, max;
+    CallBackHandler mqtt;
+    String topic;
+
+    MqttSeekBar(Context ctx, CallBackHandler handler, double fmin, double fmax, String wr_topic) {
+        super(ctx);
+        min = fmin;
+        max = fmax;
+        topic = wr_topic;
+        mqtt = handler;
+        setOnSeekBarChangeListener(this);
+        setMax(100);
+    }
+
+    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    {
+        double min = obj.getDouble("min");
+        double max = obj.getDouble("max");
+        String topic = obj.getString("topic");
+        return new MqttSeekBar(ctx, handler, min, max, topic);
+    }
+
+    private double translate(int n)
+    {
+        return ((n / 100.0) * (max - min)) + min;
+    }
+
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        //Log.d(getClass().getCanonicalName(), "" + progress);
+        mqtt.sendMessage(topic, "" + translate(progress));
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+    }
+};
+
+    /*
      *  CheckBox
      */
 
@@ -395,6 +444,9 @@ class MqttFactory {
         }
         if (type.equals("Button")) {
             return MqttButton.create(ctx, handler, obj);
+        }
+        if (type.equals("SeekBar")) {
+            return MqttSeekBar.create(ctx, handler, obj);
         }
         return null;
     }
