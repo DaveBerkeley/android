@@ -2,6 +2,9 @@ package uk.co.rotwang.mqttcontrols;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.content.res.Resources;
+import android.graphics.Color;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -314,7 +317,67 @@ class MqttTextView extends TextView implements MqttHandler {
 };
 
     /*
-     *  TextView
+     *  Url link
+     */
+
+class MqttUrl extends TextView implements MqttHandler, View.OnClickListener {
+
+    Picker text_picker;
+    Picker url_picker;
+    String url;
+    Activity activity;
+
+    public MqttUrl(Activity ctx, CallBackHandler handler, String topic, String text_field, String url_field) {
+        super(ctx);
+        handler.addHandler(topic, this);
+        text_picker = new Picker(text_field);
+        url_picker = new Picker(url_field);
+        url = null;
+        activity = ctx;
+        setOnClickListener(this);
+        setTextColor(Color.BLUE);
+    }
+
+    @Override
+    public void onMessage(String topic, MqttMessage msg)
+    {
+        //Log.d(getClass().getCanonicalName(), topic + ":" + msg.toString());
+        final String s = msg.toString();
+        final String text = text_picker.pick(s);
+        url = url_picker.pick(s);
+        setText(text);
+    }
+
+    static String getString(JSONObject obj, String key) throws JSONException
+    {
+        if (obj.has(key)) {
+            return obj.getString(key);
+        }
+        return null;
+    }
+
+    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    {
+        String topic = obj.getString("topic");
+        String text_field = obj.getString("text");
+        String url_field = obj.getString("url");
+        return new MqttUrl(ctx, handler, topic, text_field, url_field);
+    }
+
+    @Override
+    public void onClick(View v) {
+        if (url == null)
+            return;
+
+        // Goto Url
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setData(Uri.parse(url));
+        activity.startActivity(intent);
+    }
+};
+
+    /*
+     *  Label
      */
 
 class MqttLabel extends TextView {
@@ -362,6 +425,9 @@ class MqttFactory {
         }
         if (type.equals("Bell")) {
             return MqttBell.create(ctx, handler, obj);
+        }
+        if (type.equals("Url")) {
+            return MqttUrl.create(ctx, handler, obj);
         }
         return null;
     }
