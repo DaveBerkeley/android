@@ -8,4 +8,6 @@
     <string name="save_mqtt_settings">Save</string>
     <string name="reload">Reload</string>
     <string name="exit">Exit</string>
+    <string name="about">About</string>
+    <string name="about_url">http://www.rotwang.co.uk/projects/projects.html</string>
 </resources>

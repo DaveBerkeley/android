@@ -1,6 +1,8 @@
 package uk.co.rotwang.mqttcontrols;
 
 import android.app.Activity;
+import android.content.res.Resources;
+import android.net.Uri;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -170,6 +172,10 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
         reload();
     }
 
+    /*
+     * ViewGroup wrapper to allow Grid subviews
+     */
+
     class Table extends TableLayout {
         final int cols;
         int row;
@@ -204,6 +210,10 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
             tr.addView(view);
         }
     };
+
+    /*
+     *  Create View controls from JSON config file,
+     */
 
     private void loadControls(ViewGroup group, JSONArray reader) throws JSONException {
         // iterate through controls
@@ -256,11 +266,11 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
             loadControls(layout, reader);
         } catch (JSONException e) {
             e.printStackTrace();
-            toast("Error reading config");
+            toast("Error reading config : " + e.getCause());
             return false;
         } catch (Exception e) {
             e.printStackTrace();
-            toast("Error reading config");
+            toast("Error reading config : " + e.getCause());
             return false;
         }
         return true;
@@ -292,6 +302,15 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
                 toast("Disconnecting from MQTT feed");
                 finish();
                 return true;
+            }
+            case R.id.about : {
+                // Goto About page
+                Resources res = getResources();
+                String url = res.getString(R.string.about_url);
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setData(Uri.parse(url));
+                startActivity(intent);
+
             }
             default : return super.onOptionsItemSelected(item);
         }
