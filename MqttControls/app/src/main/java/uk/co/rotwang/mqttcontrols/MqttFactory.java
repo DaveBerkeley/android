@@ -220,12 +220,18 @@ class MqttCheckBox extends CheckBox implements MqttHandler {
      *  Bell alarm.
      */
 
-class MqttBell extends View implements MqttHandler {
+interface AudioDevice {
+    boolean isMuted();
+    void mute(boolean off);
+}
+
+class MqttBell extends View implements MqttHandler, AudioDevice {
 
     Picker picker;
     Context context;
     int last_value;
     boolean first = true;
+    boolean muted = false;
 
     public MqttBell(Context ctx, CallBackHandler handler, String topic, String field) {
 
@@ -238,30 +244,34 @@ class MqttBell extends View implements MqttHandler {
     @Override
     public void onMessage(String topic, MqttMessage msg)
     {
+        if (muted)
+            return;
         //Log.d(getClass().getCanonicalName(), topic + ":" + msg.toString());
 
+        int i = 0;
+        final String s = picker.pick(msg.toString());
         try {
-            final String s = picker.pick(msg.toString());
-            final int i = (int) Float.parseFloat(s);
+            i = (int) Float.parseFloat(s);
             //Log.d(getClass().getCanonicalName(), "Got number:" + i);
-
-            if (first == true) {
-                last_value = i;
-                first = false;
-                return;
-            }
-
-            if (i != last_value) {
-                Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-                Ringtone r = RingtoneManager.getRingtone(context, notification);
-                r.play();
-            }
-
-            last_value = i;
         }
         catch (NumberFormatException ex) {
             Log.d(getClass().getCanonicalName(), "Bad number:" + msg.toString() + " " + ex.getCause());
+            last_value = i + 1; // to force a notification
         }
+
+        if (first == true) {
+            last_value = i;
+            first = false;
+            return;
+        }
+
+        if (i != last_value) {
+            Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            Ringtone r = RingtoneManager.getRingtone(context, notification);
+            r.play();
+        }
+
+        last_value = i;
     }
 
     static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
@@ -269,6 +279,16 @@ class MqttBell extends View implements MqttHandler {
         String topic = obj.getString("topic");
         String field = obj.getString("field");
         return new MqttBell(ctx, handler, topic, field);
+    }
+
+    @Override
+    public boolean isMuted() {
+        return muted;
+    }
+
+    @Override
+    public void mute(boolean off) {
+        muted = off;
     }
 };
 
