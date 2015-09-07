@@ -195,12 +195,12 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
             if (dx > 100) {
                 if (page_num < max_page) {
                     page_num += 1;
-                    reload();
+                    redraw();
                 }
             } else if (dx < 100) {
                 if (page_num > 0) {
                     page_num -= 1;
-                    reload();
+                    redraw();
                 }
             }
 
@@ -313,6 +313,9 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
 
     private boolean loadControls(String conf)
     {
+        // remove all current MQTT subscribe
+        handler.unsubscribe();
+
         LinearLayout layout = (LinearLayout) findViewById(R.id.main_layout);
 
         // Remove existing views
@@ -340,6 +343,11 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
             return false;
         }
         return true;
+    }
+
+    private void redraw() {
+        String config = loadConfigFromCache();
+        loadControls(config);
     }
 
     @Override
@@ -459,9 +467,6 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
     }
 
     private void reload() {
-        // remove all current MQTT subscribe
-        handler.unsubscribe();
-
         MqttSettings conf = new MqttSettings();
         conf.read(this);
         //  Fetch and load the controls config
