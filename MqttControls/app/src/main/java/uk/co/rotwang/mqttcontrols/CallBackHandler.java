@@ -38,13 +38,15 @@ class CallBackHandler implements MqttCallback
         while (it.hasNext()) {
             Map.Entry pair = (Map.Entry)it.next();
             String topic = (String) pair.getKey();
-            //Log.d(getClass().getCanonicalName(), "Unsubscribe:" + topic);
             try {
                 client.unsubscribe(topic);
             } catch (MqttException e) {
                 Log.d(getClass().getCanonicalName(), "Unsubscribe Error:" + topic + " " + e.getCause());
             }
         }
+
+        // start a fresh map
+        map = new HashMap<String, List<MqttHandler>>();
     }
 
     class Runner implements Runnable {

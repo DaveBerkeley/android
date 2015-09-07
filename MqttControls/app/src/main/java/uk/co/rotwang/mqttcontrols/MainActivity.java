@@ -1,13 +1,15 @@
 package uk.co.rotwang.mqttcontrols;
 
 import android.app.Activity;
-import android.content.res.Resources;
 import android.net.Uri;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.content.Intent;
 import android.view.ViewGroup;
@@ -143,14 +145,18 @@ class UrlFetcher implements Runnable {
 
 public class MainActivity extends ActionBarActivity implements OnUrl {
 
-    MqttClient client;
-    CallBackHandler handler = null;
-    int max_page;
+    private MqttClient client;
+    private CallBackHandler handler = null;
+    private int page_num;
+    private int max_page;
+    private GestureDetector fling;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        fling = new GestureDetector(this, new FlingDetector());
 
         MqttSettings conf = new MqttSettings();
         conf.read(this);
@@ -170,7 +176,44 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
             Log.d(getClass().getCanonicalName(), "Connection attempt failed with reason code = " + e.getReasonCode() + ":" + e.getCause());
         }
 
+        page_num = 0;
         reload();
+    }
+
+    /*
+     * FlingListener
+     */
+
+    public class FlingDetector extends SimpleOnGestureListener {
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+            final float dx = e1.getX() - e2.getX();
+            final float dy = e1.getY() - e2.getY();
+            Log.d(getClass().getCanonicalName(), "fling:" + dx + "," + dy);
+
+            if (dx > 100) {
+                if (page_num < max_page) {
+                    page_num += 1;
+                    reload();
+                }
+            } else if (dx < 100) {
+                if (page_num > 0) {
+                    page_num -= 1;
+                    reload();
+                }
+            }
+
+            return false;
+        }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (fling.onTouchEvent(event)) {
+            return true;
+        }
+        return super.onTouchEvent(event);
     }
 
     /*
@@ -253,7 +296,6 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
     public void setTitle(CharSequence title)
     {
         String app_name = getString(R.string.app_name);
-        Log.d(getClass().getCanonicalName(), "Title" + title);
         super.setTitle(app_name + " : " + title);
     }
 
@@ -284,7 +326,9 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
         try {
             JSONArray reader = new JSONArray(conf);
             max_page = reader.length() - 1;
-            JSONArray page = readPage(reader, 0);
+            if (page_num > max_page)
+                page_num = max_page;
+            JSONArray page = readPage(reader, page_num);
             loadControls(layout, page);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -415,6 +459,9 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
     }
 
     private void reload() {
+        // remove all current MQTT subscribe
+        handler.unsubscribe();
+
         MqttSettings conf = new MqttSettings();
         conf.read(this);
         //  Fetch and load the controls config
