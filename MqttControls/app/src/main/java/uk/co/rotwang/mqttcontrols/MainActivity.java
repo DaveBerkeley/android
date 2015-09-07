@@ -145,6 +145,7 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
 
     MqttClient client;
     CallBackHandler handler = null;
+    int max_page;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -249,6 +250,15 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
         }
     }
 
+    private JSONArray readPage(JSONArray array, int idx) throws JSONException {
+        JSONArray page = array.getJSONArray(idx);
+        String title = page.getString(0);
+        JSONObject dict = page.getJSONObject(1);
+        JSONArray elements = dict.getJSONArray("elements");
+        Log.d(getClass().getCanonicalName(), "Reading page:" + title);
+        return elements;
+    }
+
     private boolean loadControls(String conf)
     {
         LinearLayout layout = (LinearLayout) findViewById(R.id.main_layout);
@@ -263,10 +273,12 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
 
         try {
             JSONArray reader = new JSONArray(conf);
-            loadControls(layout, reader);
+            max_page = reader.length() - 1;
+            JSONArray page = readPage(reader, 0);
+            loadControls(layout, page);
         } catch (JSONException e) {
             e.printStackTrace();
-            toast("Error reading config : " + e.getCause());
+            toast("JSON Error reading config : " + e.getCause());
             return false;
         } catch (Exception e) {
             e.printStackTrace();
