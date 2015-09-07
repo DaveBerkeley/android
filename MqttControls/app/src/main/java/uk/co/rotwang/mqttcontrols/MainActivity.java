@@ -250,12 +250,22 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
         }
     }
 
+    public void setTitle(CharSequence title)
+    {
+        String app_name = getString(R.string.app_name);
+        Log.d(getClass().getCanonicalName(), "Title" + title);
+        super.setTitle(app_name + " : " + title);
+    }
+
     private JSONArray readPage(JSONArray array, int idx) throws JSONException {
         JSONArray page = array.getJSONArray(idx);
-        String title = page.getString(0);
+        String type = page.getString(0);
+        assert type.equals("Page");
         JSONObject dict = page.getJSONObject(1);
         JSONArray elements = dict.getJSONArray("elements");
+        String title = dict.getString("title");
         Log.d(getClass().getCanonicalName(), "Reading page:" + title);
+        setTitle(title);
         return elements;
     }
 
@@ -317,8 +327,7 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
             }
             case R.id.about : {
                 // Goto About page
-                Resources res = getResources();
-                String url = res.getString(R.string.about_url);
+                String url = getString(R.string.about_url);
                 Intent intent = new Intent(Intent.ACTION_VIEW);
                 intent.setData(Uri.parse(url));
                 startActivity(intent);
