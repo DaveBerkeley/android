@@ -7,4 +7,7 @@
     <string name="exit">Exit</string>
     <string name="about">About</string>
     <string name="about_url">http://www.rotwang.co.uk/projects/projects.html</string>
+    <string name="mqtt_disconnect">Disconnected from MQTT feed</string>
+    <string name="json_error">JSON Error reading config</string>
+    <string name="config_read_error">Error reading config</string>
 </resources>

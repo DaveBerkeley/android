@@ -189,8 +189,8 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
         @Override
         public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
             final float dx = e1.getX() - e2.getX();
-            final float dy = e1.getY() - e2.getY();
-            Log.d(getClass().getCanonicalName(), "fling:" + dx + "," + dy);
+            //final float dy = e1.getY() - e2.getY();
+            //Log.d(getClass().getCanonicalName(), "fling:" + dx + "," + dy);
 
             if (dx > 100) {
                 if (page_num < max_page) {
@@ -335,11 +335,11 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
             loadControls(layout, page);
         } catch (JSONException e) {
             e.printStackTrace();
-            toast("JSON Error reading config : " + e.getCause());
+            toast(getString(R.string.json_error) + " : " + e.getCause());
             return false;
         } catch (Exception e) {
             e.printStackTrace();
-            toast("Error reading config : " + e.getCause());
+            toast(getString(R.string.config_read_error) + " : " + e.getCause());
             return false;
         }
         return true;
@@ -373,7 +373,7 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
                 return true;
             }
             case R.id.exit : {
-                toast("Disconnecting from MQTT feed");
+                toast(getString(R.string.mqtt_disconnect));
                 finish();
                 return true;
             }
