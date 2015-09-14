@@ -30,6 +30,7 @@
         android:inputType="number"
         android:singleLine="true"
         />
+
     <TextView android:text="URL"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -40,6 +41,13 @@
         android:layout_height="wrap_content"
         android:singleLine="true"
         />
+
+    <CheckBox
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Allow Location"
+        android:id="@+id/allow_location" />
+
     <Button
         android:text="@string/save_mqtt_settings"
         android:onClick="saveMqttSettings"

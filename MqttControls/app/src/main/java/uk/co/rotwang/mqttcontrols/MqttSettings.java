@@ -15,12 +15,14 @@ public class MqttSettings {
     String server;
     int port;
     String url;
+    boolean allow_location;
 
     public void read(Context context) {
         SharedPreferences sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_WORLD_READABLE);
         server = sp.getString("server", "");
         port = sp.getInt("port", 1883);
         url = sp.getString("url", "");
+        allow_location = sp.getBoolean("location", false);
     }
 
     public void save(Context context) {
@@ -29,6 +31,7 @@ public class MqttSettings {
         edit.putString("server", server);
         edit.putInt("port", port);
         edit.putString("url", url);
+        edit.putBoolean("location", allow_location);
         edit.commit();
     }
 

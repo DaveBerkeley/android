@@ -8,6 +8,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -33,6 +34,9 @@ public class MqttSettingsActivity extends ActionBarActivity {
         edit.setText(Integer.toString(s.port));
         edit = (EditText) findViewById(R.id.url_edit);
         edit.setText(s.url);
+
+        CheckBox cb = (CheckBox) findViewById(R.id.allow_location);
+        cb.setChecked(s.allow_location);
     }
 
     @Override
@@ -74,6 +78,9 @@ public class MqttSettingsActivity extends ActionBarActivity {
         s.port = Integer.parseInt(port);
         edit = (EditText) findViewById(R.id.url_edit);
         s.url = edit.getText().toString();
+
+        CheckBox cb = (CheckBox) findViewById(R.id.allow_location);
+        s.allow_location = cb.isChecked();
 
         toast("Saving " + s.server + ":" + port);
 
