@@ -16,6 +16,7 @@ public class MqttSettings {
     int port;
     String url;
     boolean allow_location;
+    boolean mute;
 
     public void read(Context context) {
         SharedPreferences sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_WORLD_READABLE);
@@ -23,6 +24,7 @@ public class MqttSettings {
         port = sp.getInt("port", 1883);
         url = sp.getString("url", "");
         allow_location = sp.getBoolean("location", false);
+        mute = sp.getBoolean("mute", false);
     }
 
     public void save(Context context) {
@@ -32,6 +34,7 @@ public class MqttSettings {
         edit.putInt("port", port);
         edit.putString("url", url);
         edit.putBoolean("location", allow_location);
+        edit.putBoolean("mute", mute);
         edit.commit();
     }
 

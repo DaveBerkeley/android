@@ -37,6 +37,11 @@ public class MqttSettingsActivity extends ActionBarActivity {
 
         CheckBox cb = (CheckBox) findViewById(R.id.allow_location);
         cb.setChecked(s.allow_location);
+
+        cb = (CheckBox) findViewById(R.id.mute);
+        cb.setChecked(s.mute);
+        // Disable for now ...
+        cb.setEnabled(false);
     }
 
     @Override
@@ -81,6 +86,8 @@ public class MqttSettingsActivity extends ActionBarActivity {
 
         CheckBox cb = (CheckBox) findViewById(R.id.allow_location);
         s.allow_location = cb.isChecked();
+        cb = (CheckBox) findViewById(R.id.mute);
+        s.mute = cb.isChecked();
 
         toast("Saving " + s.server + ":" + port);
 

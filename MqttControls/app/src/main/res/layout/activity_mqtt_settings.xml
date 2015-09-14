@@ -48,6 +48,12 @@
         android:text="Allow Location"
         android:id="@+id/allow_location" />
 
+    <CheckBox
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Mute"
+        android:id="@+id/mute" />
+
     <Button
         android:text="@string/save_mqtt_settings"
         android:onClick="saveMqttSettings"
