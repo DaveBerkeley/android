@@ -8,9 +8,12 @@ import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -375,14 +378,6 @@ class MqttUrl extends TextView implements MqttHandler, View.OnClickListener {
         return null;
     }
 
-    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
-    {
-        String topic = obj.getString("topic");
-        String text_field = obj.getString("text");
-        String url_field = obj.getString("url");
-        return new MqttUrl(ctx, handler, topic, text_field, url_field);
-    }
-
     @Override
     public void onClick(View v) {
         if (url == null)
@@ -392,6 +387,14 @@ class MqttUrl extends TextView implements MqttHandler, View.OnClickListener {
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setData(Uri.parse(url));
         activity.startActivity(intent);
+    }
+
+    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    {
+        String topic = obj.getString("topic");
+        String text_field = obj.getString("text");
+        String url_field = obj.getString("url");
+        return new MqttUrl(ctx, handler, topic, text_field, url_field);
     }
 };
 
@@ -416,6 +419,51 @@ class MqttLabel extends TextView {
         return new MqttLabel(ctx, text);
     }
 };
+
+    /*
+     *  Text Entry
+     */
+
+class MqttEditText extends EditText implements View.OnKeyListener {
+
+    String topic;
+    CallBackHandler handler;
+
+    public MqttEditText(Activity ctx, CallBackHandler handler0, String topic0) {
+        super(ctx);
+        handler = handler0;
+        topic = topic0;
+
+        setSingleLine(true);
+        setImeOptions(EditorInfo.IME_ACTION_SEND);
+        setOnKeyListener(this);
+    }
+
+    public void send() {
+        String text = getText().toString();
+        handler.sendMessage(topic, text);
+        setText("");
+    }
+
+    @Override
+    public boolean onKey(View v, int keyCode, KeyEvent event) {
+        if (event.getKeyCode() != KeyEvent.KEYCODE_ENTER)
+            return false;
+        if (event.isShiftPressed())
+            return false;
+        if (event.getAction() != KeyEvent.ACTION_DOWN)
+            return false;
+
+        send();
+        return true;
+    }
+
+    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    {
+        String topic = obj.getString("topic");
+        return new MqttEditText(ctx, handler, topic);
+    }
+}
 
     /*
      *  Factory method to construct View classes
@@ -447,6 +495,9 @@ class MqttFactory {
         }
         if (type.equals("Url")) {
             return MqttUrl.create(ctx, handler, obj);
+        }
+        if (type.equals("EditText")) {
+            return MqttEditText.create(ctx, handler, obj);
         }
         return null;
     }
