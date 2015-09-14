@@ -2,12 +2,15 @@ package uk.co.rotwang.mqttcontrols;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
     /*
@@ -44,6 +47,13 @@ public class MqttSettingsActivity extends AppCompatActivity {
         cb = (CheckBox) findViewById(R.id.mute);
         cb.setChecked(flag.get());
         cb.setOnCheckedChangeListener(cb_listener);
+
+        // Connect flag to ident changes
+        Flag<String> sflag = Flag.get("ident");
+        EditTextListener et_listener = new EditTextListener(sflag);
+        edit = (EditText) findViewById(R.id.ident_edit);
+        edit.setText(sflag.get());
+        edit.setOnEditorActionListener(et_listener);
     }
 
     @Override
@@ -77,9 +87,9 @@ public class MqttSettingsActivity extends AppCompatActivity {
 
     class CheckboxListener implements CompoundButton.OnCheckedChangeListener {
 
-        private Flag flag;
+        private Flag<Boolean> flag;
 
-        CheckboxListener(Flag f) {
+        public CheckboxListener(Flag<Boolean> f) {
             flag = f;
         }
 
@@ -87,6 +97,22 @@ public class MqttSettingsActivity extends AppCompatActivity {
         @Override
         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
             flag.set(isChecked);
+        }
+    }
+
+    class EditTextListener implements TextView.OnEditorActionListener {
+
+        private Flag<String> flag;
+
+        public EditTextListener(Flag<String> f) { flag = f; }
+
+        // Implements OnEditorActionListener
+        @Override
+        public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                flag.set(v.getText().toString());
+            }
+            return false;
         }
     }
 
@@ -106,6 +132,9 @@ public class MqttSettingsActivity extends AppCompatActivity {
 
         cb = (CheckBox) findViewById(R.id.mute);
         s.mute = cb.isChecked();
+
+        edit = (EditText) findViewById(R.id.ident_edit);
+        s.ident = edit.getText().toString();
 
         toast("Saving " + s.server + ":" + port);
 

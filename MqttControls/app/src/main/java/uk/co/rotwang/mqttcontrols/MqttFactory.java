@@ -58,13 +58,23 @@ class Picker {
 
 class Topic
 {
+    private static Flag<String> flag;
     private String topic;
 
     public Topic(String t) {
         topic = t;
+
+        if (flag == null) {
+            if (topic.contains("%I")) {
+                flag = Flag.get("ident");
+            }
+        }
     }
 
     public String get() {
+        if (flag != null) {
+            return topic.replace("%I", flag.get());
+        }
         return topic;
     }
 }

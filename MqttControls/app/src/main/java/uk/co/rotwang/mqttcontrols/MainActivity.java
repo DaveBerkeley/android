@@ -74,6 +74,7 @@ public class MainActivity extends AppCompatActivity implements OnUrl {
 
         Flag.add("mute", conf.mute);
         Flag.add("location", conf.allow_location);
+        Flag.add("ident", conf.ident);
 
         page_num = 0;
         reload();
