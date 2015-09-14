@@ -1,9 +1,13 @@
 package uk.co.rotwang.mqttcontrols;
 
 import android.app.Activity;
+import android.content.Context;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.GestureDetector.SimpleOnGestureListener;
@@ -34,6 +38,9 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
     /*
      *  Handler for MQTT messages
@@ -53,10 +60,114 @@ interface OnUrl
 }
 
     /*
+     *  On Flag Change handler
+     */
+
+interface OnFlag {
+    public void onFlag(boolean state);
+}
+
+class Flag {
+
+    private boolean state;
+    private List<OnFlag> handlers;
+
+    public Flag(boolean s)
+    {
+        state = s;
+        handlers = new ArrayList<OnFlag>();
+    }
+
+    public void register(OnFlag handler) {
+        handlers.add(handler);
+    }
+
+    public void remove(OnFlag handler) {
+        handlers.remove(handler);
+    }
+
+    public void set(boolean s) {
+        state = s;
+        for (OnFlag handler : handlers) {
+            handler.onFlag(state);
+        }
+    }
+
+    public boolean get()
+    {
+        return state;
+    }
+
+    private static HashMap<String, Flag> flags;
+
+    public static Flag add(String name, boolean state) {
+        if (flags == null) {
+            flags = new HashMap<String, Flag>();
+        }
+
+        Flag flag = new Flag(state);
+        flags.put(name, flag);
+        return flag;
+    }
+
+    public static Flag get(String name) {
+        return flags.get(name);
+    }
+}
+
+    /*
+     *  GPS / Location listener
+     */
+
+class Location implements LocationListener, OnFlag {
+
+    private Activity activity;
+    private CallBackHandler handler;
+    private Flag location_flag;
+
+    public Location(Activity ctx, CallBackHandler h, Flag flag) {
+        activity = ctx;
+        handler = h;
+        location_flag = flag;
+        flag.register(this);
+        connect(flag.get());
+    }
+
+    private void connect(boolean on)
+    {
+        LocationManager man = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
+
+        if (on) {
+            man.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, this);
+        } else {
+            man.removeUpdates(this);
+        }
+    }
+
+    //  LocationListener interface.
+
+    @Override
+    public void onLocationChanged(android.location.Location location) {
+        Log.d(getClass().getCanonicalName(), "Location : " + location);
+    }
+
+    @Override public void onStatusChanged(String provider, int status, Bundle extras) { }
+    @Override public void onProviderEnabled(String provider) { }
+    @Override public void onProviderDisabled(String provider) { }
+
+    //  Implement OnFlag
+
+    @Override
+    public void onFlag(boolean state) {
+        connect(location_flag.get());
+    }
+}
+
+    /*
      *  Activity
      */
 
-public class MainActivity extends ActionBarActivity implements OnUrl {
+public class MainActivity extends AppCompatActivity implements OnUrl {
 
     private MqttClient client;
     private CallBackHandler handler = null;
@@ -88,6 +199,9 @@ public class MainActivity extends ActionBarActivity implements OnUrl {
         } catch (MqttException e) {
             Log.d(getClass().getCanonicalName(), "Connection attempt failed with reason code = " + e.getReasonCode() + ":" + e.getCause());
         }
+
+        Flag location_flag = Flag.add("location", conf.allow_location);
+        new Location(this, handler, location_flag);
 
         page_num = 0;
         reload();

@@ -3,12 +3,14 @@ package uk.co.rotwang.mqttcontrols;
 import android.content.Context;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -18,7 +20,7 @@ import android.widget.Toast;
     *   Activity
     */
 
-public class MqttSettingsActivity extends ActionBarActivity {
+public class MqttSettingsActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,6 +39,11 @@ public class MqttSettingsActivity extends ActionBarActivity {
 
         CheckBox cb = (CheckBox) findViewById(R.id.allow_location);
         cb.setChecked(s.allow_location);
+
+        //  Connect flag to the location checkbox
+        Flag flag = Flag.get("location");
+        CheckboxListener cb_listener = new CheckboxListener(flag);
+        cb.setOnCheckedChangeListener(cb_listener);
 
         cb = (CheckBox) findViewById(R.id.mute);
         cb.setChecked(s.mute);
@@ -73,6 +80,21 @@ public class MqttSettingsActivity extends ActionBarActivity {
         toast.show();
     }
 
+    class CheckboxListener implements CompoundButton.OnCheckedChangeListener {
+
+        private Flag flag;
+
+        CheckboxListener(Flag f) {
+            flag = f;
+        }
+
+        //  Implement OnCheckedChangeListener
+        @Override
+        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            flag.set(isChecked);
+        }
+    }
+
     /** Called when the user clicks the Settings button */
     public void saveMqttSettings(View view) {
         MqttSettings s = new MqttSettings();
@@ -86,6 +108,7 @@ public class MqttSettingsActivity extends ActionBarActivity {
 
         CheckBox cb = (CheckBox) findViewById(R.id.allow_location);
         s.allow_location = cb.isChecked();
+
         cb = (CheckBox) findViewById(R.id.mute);
         s.mute = cb.isChecked();
 
