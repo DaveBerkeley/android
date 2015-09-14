@@ -1,9 +1,6 @@
 package uk.co.rotwang.mqttcontrols;
 
 import android.app.Activity;
-import android.content.Context;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -56,54 +53,6 @@ interface OnUrl
 }
 
     /*
-     *  GPS / Location listener
-     */
-
-class Location implements LocationListener, OnFlag {
-
-    private Activity activity;
-    private CallBackHandler handler;
-    private Flag location_flag;
-
-    public Location(Activity ctx, CallBackHandler h, Flag flag) {
-        activity = ctx;
-        handler = h;
-        location_flag = flag;
-        flag.register(this);
-        connect(flag.get());
-    }
-
-    private void connect(boolean on)
-    {
-        LocationManager man = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
-
-        if (on) {
-            man.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, this);
-        } else {
-            man.removeUpdates(this);
-        }
-    }
-
-    //  LocationListener interface.
-
-    @Override
-    public void onLocationChanged(android.location.Location location) {
-        Log.d(getClass().getCanonicalName(), "Location : " + location);
-    }
-
-    @Override public void onStatusChanged(String provider, int status, Bundle extras) { }
-    @Override public void onProviderEnabled(String provider) { }
-    @Override public void onProviderDisabled(String provider) { }
-
-    //  Implement OnFlag
-
-    @Override
-    public void onFlag(boolean state) {
-        connect(location_flag.get());
-    }
-}
-
-    /*
      *  Activity
      */
 
@@ -140,8 +89,8 @@ public class MainActivity extends AppCompatActivity implements OnUrl {
             Log.d(getClass().getCanonicalName(), "Connection attempt failed with reason code = " + e.getReasonCode() + ":" + e.getCause());
         }
 
-        Flag location_flag = Flag.add("location", conf.allow_location);
-        new Location(this, handler, location_flag);
+        Flag.add("mute", conf.mute);
+        Flag.add("location", conf.allow_location);
 
         page_num = 0;
         reload();

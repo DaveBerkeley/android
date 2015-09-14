@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.location.Location;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -222,18 +223,13 @@ class MqttCheckBox extends CheckBox implements MqttHandler {
      *  Bell alarm.
      */
 
-interface AudioDevice {
-    boolean isMuted();
-    void mute(boolean off);
-}
-
-class MqttBell extends View implements MqttHandler, AudioDevice {
+class MqttBell extends View implements MqttHandler {
 
     Picker picker;
     Context context;
     int last_value;
     boolean first = true;
-    boolean muted = false;
+    Flag muted;
 
     public MqttBell(Context ctx, CallBackHandler handler, String topic, String field) {
 
@@ -241,12 +237,13 @@ class MqttBell extends View implements MqttHandler, AudioDevice {
         context = ctx;
         handler.addHandler(topic, this);
         picker = new Picker(field);
+        muted = Flag.get("mute");
     }
 
     @Override
     public void onMessage(String topic, MqttMessage msg)
     {
-        if (muted)
+        if (muted.get())
             return;
         //Log.d(getClass().getCanonicalName(), topic + ":" + msg.toString());
 
@@ -281,16 +278,6 @@ class MqttBell extends View implements MqttHandler, AudioDevice {
         String topic = obj.getString("topic");
         String field = obj.getString("field");
         return new MqttBell(ctx, handler, topic, field);
-    }
-
-    @Override
-    public boolean isMuted() {
-        return muted;
-    }
-
-    @Override
-    public void mute(boolean off) {
-        muted = off;
     }
 };
 
@@ -421,6 +408,40 @@ class MqttLabel extends TextView {
 };
 
     /*
+     *  GPS
+     */
+
+// TODO : needs to look like a GPS icon ...
+class MqttGps extends TextView implements OnLocation {
+
+    private String topic;
+    private CallBackHandler handler;
+
+    private MqttGps(Activity ctx, CallBackHandler h, String t) {
+        super(ctx);
+        handler = h;
+        topic = t;
+
+        Flag location_flag = Flag.get("location");
+        GpsLocation gps = GpsLocation.get(ctx, handler, location_flag);
+        gps.register(this);
+    }
+
+    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    {
+        String t = obj.getString("topic");
+        return new MqttGps(ctx, handler, t);
+    }
+
+    // implement OnLocation.
+    @Override
+    public void onEvent(Location location) {
+        //Log.d(getClass().getCanonicalName(), topic + ":" + location);
+        handler.sendMessage(topic, location.toString());
+    }
+};
+
+    /*
      *  Text Entry
      */
 
@@ -498,6 +519,9 @@ class MqttFactory {
         }
         if (type.equals("EditText")) {
             return MqttEditText.create(ctx, handler, obj);
+        }
+        if (type.equals("GPS")) {
+            return MqttGps.create(ctx, handler, obj);
         }
         return null;
     }

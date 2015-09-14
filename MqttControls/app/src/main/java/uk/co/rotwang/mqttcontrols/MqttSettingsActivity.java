@@ -41,8 +41,11 @@ public class MqttSettingsActivity extends AppCompatActivity {
 
         cb = (CheckBox) findViewById(R.id.mute);
         cb.setChecked(s.mute);
-        // Disable for now ...
-        cb.setEnabled(false);
+
+        //  Connect flag to the mute checkbox
+        flag = Flag.get("mute");
+        cb_listener = new CheckboxListener(flag);
+        cb.setOnCheckedChangeListener(cb_listener);
     }
 
     @Override
