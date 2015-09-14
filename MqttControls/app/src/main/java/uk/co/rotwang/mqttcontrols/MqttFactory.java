@@ -9,6 +9,7 @@ import android.location.Location;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -23,6 +24,9 @@ import android.widget.TextView;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
     /*
      *  Parser : optionally extracts fields from JSON string
@@ -454,10 +458,12 @@ class MqttGps extends TextView implements OnLocation {
 
     private Topic topic;
     private CallBackHandler handler;
+    private Activity activity;
 
     private MqttGps(Activity ctx, CallBackHandler h, String t) {
         super(ctx);
         handler = h;
+        activity = ctx;
         topic = new Topic(t);
 
         Flag location_flag = Flag.get("location");
@@ -474,6 +480,12 @@ class MqttGps extends TextView implements OnLocation {
             json.accumulate("alt", location.getAltitude());
             json.accumulate("v", location.getSpeed());
             json.accumulate("az", location.getBearing());
+
+            final long time = location.getTime();
+            Date date = new Date(time);
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy/mm/dd HH:MM Z");
+            String s = sdf.format(date);
+            json.accumulate("time", s);
         } catch (JSONException e) {
             e.printStackTrace();
         }
