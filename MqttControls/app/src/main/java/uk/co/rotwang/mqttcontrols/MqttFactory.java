@@ -433,12 +433,6 @@ class MqttGps extends TextView implements OnLocation {
         gps.register(this);
     }
 
-    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
-    {
-        String t = obj.getString("topic");
-        return new MqttGps(ctx, handler, t);
-    }
-
     private JSONObject toJson(Location location)
     {
         JSONObject json = new JSONObject();
@@ -446,8 +440,8 @@ class MqttGps extends TextView implements OnLocation {
             json.accumulate("lon", location.getLongitude());
             json.accumulate("lat", location.getLatitude());
             json.accumulate("alt", location.getAltitude());
-            json.accumulate("vel", location.getSpeed());
-            json.accumulate("bear", location.getBearing());
+            json.accumulate("v", location.getSpeed());
+            json.accumulate("az", location.getBearing());
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -461,6 +455,12 @@ class MqttGps extends TextView implements OnLocation {
         //Log.d(getClass().getCanonicalName(), topic + ":" + location);
         JSONObject json = toJson(location);
         handler.sendMessage(topic, json.toString(), true);
+    }
+
+    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    {
+        String t = obj.getString("topic");
+        return new MqttGps(ctx, handler, t);
     }
 };
 
