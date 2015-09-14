@@ -50,7 +50,24 @@ class Picker {
         }
         return text;
     }
-};
+}
+
+    /*
+     *  Topic handler
+     */
+
+class Topic
+{
+    private String topic;
+
+    public Topic(String t) {
+        topic = t;
+    }
+
+    public String get() {
+        return topic;
+    }
+}
 
     /*
      *  Button wrapper
@@ -58,14 +75,14 @@ class Picker {
 
 class MqttButton extends Button implements View.OnClickListener {
     CallBackHandler mqttHandler;
-    String topic;
+    Topic topic;
     String data;
 
     MqttButton(Context ctx, CallBackHandler handler, String label, String wr_topic, String send) {
         super(ctx);
         setText(label);
         mqttHandler = handler;
-        topic = wr_topic;
+        topic = new Topic(wr_topic);
         setOnClickListener(this);
         data = send;
     }
@@ -73,7 +90,7 @@ class MqttButton extends Button implements View.OnClickListener {
     @Override
     public void onClick(View view) {
         //Log.d(getClass().getCanonicalName(), "on click");
-        mqttHandler.sendMessage(topic, data);
+        mqttHandler.sendMessage(topic.get(), data);
     }
 
     static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
@@ -94,9 +111,10 @@ class MqttProgressBar extends ProgressBar implements MqttHandler {
     double min, max;
     Picker picker;
 
-    MqttProgressBar(Context ctx, CallBackHandler handler, double fmin, double fmax, String topic, String field) {
+    MqttProgressBar(Context ctx, CallBackHandler handler, double fmin, double fmax, String t, String field) {
         super(ctx, null, android.R.attr.progressBarStyleHorizontal);
-        handler.addHandler(topic, this);
+        Topic topic = new Topic(t);
+        handler.addHandler(topic.get(), this);
         min = fmin;
         max = fmax;
         picker = new Picker(field);
@@ -140,13 +158,13 @@ class MqttSeekBar extends SeekBar implements SeekBar.OnSeekBarChangeListener {
 
     double min, max;
     CallBackHandler mqtt;
-    String topic;
+    Topic topic;
 
     MqttSeekBar(Context ctx, CallBackHandler handler, double fmin, double fmax, String wr_topic) {
         super(ctx);
         min = fmin;
         max = fmax;
-        topic = wr_topic;
+        topic = new Topic(wr_topic);
         mqtt = handler;
         setOnSeekBarChangeListener(this);
         setMax(100);
@@ -168,7 +186,7 @@ class MqttSeekBar extends SeekBar implements SeekBar.OnSeekBarChangeListener {
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
         //Log.d(getClass().getCanonicalName(), "" + progress);
-        mqtt.sendMessage(topic, "" + translate(progress));
+        mqtt.sendMessage(topic.get(), "" + translate(progress));
     }
 
     @Override
@@ -188,11 +206,12 @@ class MqttCheckBox extends CheckBox implements MqttHandler {
 
     Picker picker;
 
-    public MqttCheckBox(Context ctx, CallBackHandler handler, String topic, String field) {
+    public MqttCheckBox(Context ctx, CallBackHandler handler, String t, String field) {
 
         super(ctx);
         setEnabled(false);
-        handler.addHandler(topic, this);
+        Topic topic = new Topic(t);
+        handler.addHandler(topic.get(), this);
         picker = new Picker(field);
     }
 
@@ -232,11 +251,12 @@ class MqttBell extends View implements MqttHandler {
     boolean first = true;
     Flag<Boolean> muted;
 
-    public MqttBell(Context ctx, CallBackHandler handler, String topic, String field) {
+    public MqttBell(Context ctx, CallBackHandler handler, String t, String field) {
 
         super(ctx);
         context = ctx;
-        handler.addHandler(topic, this);
+        Topic topic = new Topic(t);
+        handler.addHandler(topic.get(), this);
         picker = new Picker(field);
         muted = Flag.get("mute");
     }
@@ -292,11 +312,12 @@ class MqttTextView extends TextView implements MqttHandler {
     String pre_text;
     String post_text;
 
-    public MqttTextView(Activity ctx, CallBackHandler handler, String topic, String field, String pre, String post) {
+    public MqttTextView(Activity ctx, CallBackHandler handler, String t, String field, String pre, String post) {
         super(ctx);
         pre_text = (pre == null) ? "" : pre;
         post_text = (post == null) ? "" : post;
-        handler.addHandler(topic, this);
+        Topic topic = new Topic(t);
+        handler.addHandler(topic.get(), this);
         picker = new Picker(field);
     }
 
@@ -337,9 +358,10 @@ class MqttUrl extends TextView implements MqttHandler, View.OnClickListener {
     String url;
     Activity activity;
 
-    public MqttUrl(Activity ctx, CallBackHandler handler, String topic, String text_field, String url_field) {
+    public MqttUrl(Activity ctx, CallBackHandler handler, String t, String text_field, String url_field) {
         super(ctx);
-        handler.addHandler(topic, this);
+        Topic topic = new Topic(t);
+        handler.addHandler(topic.get(), this);
         text_picker = new Picker(text_field);
         url_picker = new Picker(url_field);
         url = null;
@@ -420,13 +442,13 @@ class MqttLabel extends TextView {
 // TODO : needs to look like a GPS icon ...
 class MqttGps extends TextView implements OnLocation {
 
-    private String topic;
+    private Topic topic;
     private CallBackHandler handler;
 
     private MqttGps(Activity ctx, CallBackHandler h, String t) {
         super(ctx);
         handler = h;
-        topic = t;
+        topic = new Topic(t);
 
         Flag location_flag = Flag.get("location");
         GpsLocation gps = GpsLocation.get(ctx, handler, location_flag);
@@ -454,7 +476,7 @@ class MqttGps extends TextView implements OnLocation {
     public void onEvent(Location location) {
         //Log.d(getClass().getCanonicalName(), topic + ":" + location);
         JSONObject json = toJson(location);
-        handler.sendMessage(topic, json.toString(), true);
+        handler.sendMessage(topic.get(), json.toString(), true);
     }
 
     static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
@@ -470,13 +492,13 @@ class MqttGps extends TextView implements OnLocation {
 
 class MqttEditText extends EditText implements View.OnKeyListener {
 
-    String topic;
+    Topic topic;
     CallBackHandler handler;
 
-    public MqttEditText(Activity ctx, CallBackHandler handler0, String topic0) {
+    public MqttEditText(Activity ctx, CallBackHandler h, String t) {
         super(ctx);
-        handler = handler0;
-        topic = topic0;
+        handler = h;
+        topic = new Topic(t);
 
         setSingleLine(true);
         setImeOptions(EditorInfo.IME_ACTION_SEND);
@@ -485,7 +507,7 @@ class MqttEditText extends EditText implements View.OnKeyListener {
 
     public void send() {
         String text = getText().toString();
-        handler.sendMessage(topic, text);
+        handler.sendMessage(topic.get(), text);
         setText("");
     }
 
