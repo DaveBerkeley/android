@@ -230,7 +230,7 @@ class MqttBell extends View implements MqttHandler {
     Context context;
     int last_value;
     boolean first = true;
-    Flag muted;
+    Flag<Boolean> muted;
 
     public MqttBell(Context ctx, CallBackHandler handler, String topic, String field) {
 

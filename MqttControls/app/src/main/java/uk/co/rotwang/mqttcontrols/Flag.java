@@ -8,49 +8,49 @@ import java.util.List;
      *  On Flag Change handler
      */
 
-interface OnFlag {
-    public void onFlag(boolean state);
+interface OnFlag<T> {
+    public void onFlag(T state);
 }
 
-class Flag {
+class Flag<T> {
 
-    private boolean state;
-    private List<OnFlag> handlers;
+    private T state;
+    private List<OnFlag<T>> handlers;
 
-    public Flag(boolean s)
+    public Flag(T s)
     {
         state = s;
-        handlers = new ArrayList<OnFlag>();
+        handlers = new ArrayList<OnFlag<T>>();
     }
 
-    public void register(OnFlag handler) {
+    public void register(OnFlag<T> handler) {
         handlers.add(handler);
     }
 
-    public void remove(OnFlag handler) {
+    public void remove(OnFlag<T> handler) {
         handlers.remove(handler);
     }
 
-    public void set(boolean s) {
+    public void set(T s) {
         state = s;
         for (OnFlag handler : handlers) {
             handler.onFlag(state);
         }
     }
 
-    public boolean get()
+    public T get()
     {
         return state;
     }
 
     private static HashMap<String, Flag> flags;
 
-    public static Flag add(String name, boolean state) {
+    public static Flag<Boolean> add(String name, boolean state) {
         if (flags == null) {
             flags = new HashMap<String, Flag>();
         }
 
-        Flag flag = new Flag(state);
+        Flag flag = new Flag<Boolean>(state);
         flags.put(name, flag);
         return flag;
     }

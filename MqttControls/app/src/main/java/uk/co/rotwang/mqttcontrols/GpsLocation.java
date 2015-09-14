@@ -18,7 +18,7 @@ interface OnLocation {
     public void onEvent(android.location.Location location);
 }
 
-class GpsLocation implements LocationListener, OnFlag {
+class GpsLocation implements LocationListener, OnFlag<Boolean> {
 
     private Activity activity;
     private CallBackHandler handler;
@@ -31,7 +31,9 @@ class GpsLocation implements LocationListener, OnFlag {
         location_flag = flag;
         handlers = new ArrayList<OnLocation>();
         flag.register(this);
-        connect(flag.get());
+
+        Boolean on = (Boolean) flag.get();
+        connect(on);
     }
 
     public void register(OnLocation handler) {
@@ -67,8 +69,8 @@ class GpsLocation implements LocationListener, OnFlag {
     //  Implement OnFlag
 
     @Override
-    public void onFlag(boolean state) {
-        connect(location_flag.get());
+    public void onFlag(Boolean state) {
+        connect(state);
     }
 
     /*

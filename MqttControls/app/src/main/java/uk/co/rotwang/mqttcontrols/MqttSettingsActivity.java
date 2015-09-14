@@ -31,20 +31,18 @@ public class MqttSettingsActivity extends AppCompatActivity {
         edit = (EditText) findViewById(R.id.url_edit);
         edit.setText(s.url);
 
-        CheckBox cb = (CheckBox) findViewById(R.id.allow_location);
-        cb.setChecked(s.allow_location);
-
         //  Connect flag to the location checkbox
-        Flag flag = Flag.get("location");
+        Flag<Boolean> flag = Flag.get("location");
         CheckboxListener cb_listener = new CheckboxListener(flag);
+        CheckBox cb = (CheckBox) findViewById(R.id.allow_location);
+        cb.setChecked(flag.get());
         cb.setOnCheckedChangeListener(cb_listener);
-
-        cb = (CheckBox) findViewById(R.id.mute);
-        cb.setChecked(s.mute);
 
         //  Connect flag to the mute checkbox
         flag = Flag.get("mute");
         cb_listener = new CheckboxListener(flag);
+        cb = (CheckBox) findViewById(R.id.mute);
+        cb.setChecked(flag.get());
         cb.setOnCheckedChangeListener(cb_listener);
     }
 
