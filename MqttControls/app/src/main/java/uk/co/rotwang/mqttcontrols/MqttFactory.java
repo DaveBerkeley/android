@@ -1,6 +1,7 @@
 package uk.co.rotwang.mqttcontrols;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -371,9 +372,14 @@ class MqttUrl extends TextView implements MqttHandler, View.OnClickListener {
             return;
 
         // Goto Url
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setData(Uri.parse(url));
-        activity.startActivity(intent);
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(Uri.parse(url));
+            activity.startActivity(intent);
+        }
+        catch (ActivityNotFoundException e) {
+            Log.d(getClass().getCanonicalName(), "URL Error:" + e.getCause());
+        }
     }
 
     static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
@@ -433,11 +439,28 @@ class MqttGps extends TextView implements OnLocation {
         return new MqttGps(ctx, handler, t);
     }
 
+    private JSONObject toJson(Location location)
+    {
+        JSONObject json = new JSONObject();
+        try {
+            json.accumulate("lon", location.getLongitude());
+            json.accumulate("lat", location.getLatitude());
+            json.accumulate("alt", location.getAltitude());
+            json.accumulate("vel", location.getSpeed());
+            json.accumulate("bear", location.getBearing());
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        return json;
+    }
+
     // implement OnLocation.
     @Override
     public void onEvent(Location location) {
         //Log.d(getClass().getCanonicalName(), topic + ":" + location);
-        handler.sendMessage(topic, location.toString());
+        JSONObject json = toJson(location);
+        handler.sendMessage(topic, json.toString(), true);
     }
 };
 

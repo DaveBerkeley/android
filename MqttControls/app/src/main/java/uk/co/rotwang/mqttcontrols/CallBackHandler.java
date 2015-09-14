@@ -16,6 +16,13 @@ import java.util.List;
 import java.util.Map;
 
     /*
+    *   MQTT Callback interface
+    */
+
+interface MqttHandler {
+  public void onMessage(String topic, MqttMessage msg);
+}
+    /*
      *  MQTT Callback implementation
      */
 
@@ -108,18 +115,24 @@ class CallBackHandler implements MqttCallback
         handlers.add(handler);
     }
 
-    public void sendMessage(String topic, String msg)
+    public void sendMessage(String topic, String msg, boolean retain)
     {
         try
         {
             MqttMessage message = new MqttMessage();
             message.setPayload(msg.getBytes());
+            message.setRetained(retain);
             client.publish(topic, message);
         }
         catch (MqttException e)
         {
             Log.d(getClass().getCanonicalName(), "Publish failed with reason code = " + e.getReasonCode());
         }
+    }
+
+    public void sendMessage(String topic, String msg)
+    {
+        sendMessage(topic, msg, false);
     }
 }
 

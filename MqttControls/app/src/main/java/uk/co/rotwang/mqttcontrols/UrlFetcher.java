@@ -10,8 +10,13 @@ import java.net.URL;
 import java.net.URLConnection;
 
     /*
-     * Fetch Data in a thread
+     *  Fetch data from URL in a thread
      */
+
+interface OnUrl
+{
+    public void onUrl(String data);
+}
 
 class UrlFetcher implements Runnable {
 

@@ -36,23 +36,6 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 
     /*
-     *  Handler for MQTT messages
-     */
-
-interface MqttHandler {
-  public void onMessage(String topic, MqttMessage msg);
-}
-
-    /*
-     *  Fetch data from URL in a thread
-     */
-
-interface OnUrl
-{
-    public void onUrl(String data);
-}
-
-    /*
      *  Activity
      */
 
