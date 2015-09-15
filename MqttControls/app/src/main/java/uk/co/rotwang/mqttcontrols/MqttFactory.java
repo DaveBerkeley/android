@@ -602,7 +602,7 @@ class MqttGps extends TextView implements OnLocation {
 
             final long time = location.getTime();
             Date date = new Date(time);
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy/mm/dd HH:MM Z");
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm Z");
             String s = sdf.format(date);
             json.accumulate("time", s);
         } catch (JSONException e) {
