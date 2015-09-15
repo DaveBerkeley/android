@@ -99,24 +99,38 @@ class MqttStyle {
     private Integer getInt(JSONObject json, String field) {
         try {
             int i = json.getInt(field);
-            Log.d(getClass().getCanonicalName(), "set " + field + " " + i);
             return new Integer(i);
         } catch (JSONException e) {
             return null;
         }
     }
 
-    public Integer getfontsize() {
+    interface IntGetter {
+        Integer get(MqttStyle s);
+    }
+
+    public Integer get(IntGetter getter) {
         MqttStyle style = this;
         while (style != null) {
-            if (style.fontsize != null)
-                return style.fontsize;
+            if (getter.get(style) != null)
+                return getter.get(style);
             if (style.parent == null)
                 return null;
             style = style.parent.getStyle();
         }
         return null;
     }
+
+    public Integer getfontsize() {
+        return get(new IntGetter() {
+            @Override
+            public Integer get(MqttStyle s) {
+                return s.fontsize;
+            }
+        });
+    }
+
+    //  Apply Style to View
 
     public void apply(TextView view) {
         if (getfontsize() != null) {
@@ -128,8 +142,6 @@ class MqttStyle {
 interface MqttControl {
     MqttStyle getStyle();
 }
-
-
 
     /*
      *  Button wrapper
