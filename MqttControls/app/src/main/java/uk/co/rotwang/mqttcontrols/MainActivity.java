@@ -346,7 +346,7 @@ public class MainActivity extends AppCompatActivity implements OnUrl {
 
         id -= PAGE_MENU;
 
-        if ((id > 0) && (id <= max_page)) {
+        if ((id >= 0) && (id <= max_page)) {
             // Page selected from sub_menu
             if (page_num != id) {
                 page_num = id;
