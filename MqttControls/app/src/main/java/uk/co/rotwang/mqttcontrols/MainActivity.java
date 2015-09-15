@@ -120,18 +120,19 @@ public class MainActivity extends AppCompatActivity implements OnUrl {
      * ViewGroup wrapper to allow Grid subviews
      */
 
-    class Table extends TableLayout {
+    class Table extends TableLayout implements MqttControl {
         final int cols;
         int row;
         Activity context;
         TableRow tr;
 
-        public Table(Activity ctx, int r, int c)
+        public Table(Activity ctx, MqttControl parent, JSONObject json, int r, int c)
         {
             super(ctx);
             context = ctx;
             cols = c;
             row = 0;
+            style = new MqttStyle(parent, json);
         }
 
         public void addView(View view)
@@ -153,7 +154,23 @@ public class MainActivity extends AppCompatActivity implements OnUrl {
             view.setLayoutParams(layout);
             tr.addView(view);
         }
+
+        private MqttStyle style;
+
+        @Override
+        public MqttStyle getStyle() {
+            return style;
+        }
     };
+
+    private MqttControl getParent(View view) {
+        try {
+            return (MqttControl) (Object) view;
+        }
+        catch (ClassCastException ex){
+            return null;
+        }
+    }
 
     /*
      *  Create View controls from JSON config file,
@@ -174,7 +191,7 @@ public class MainActivity extends AppCompatActivity implements OnUrl {
             if (type.equals("GridView")) {
                 final int rows = dict.getInt("rows");
                 final int cols = dict.getInt("cols");
-                Table grid = new Table(this, rows, cols);
+                Table grid = new Table(this, getParent(group), dict, rows, cols);
 
                 group.addView(grid);
 
@@ -184,7 +201,7 @@ public class MainActivity extends AppCompatActivity implements OnUrl {
                 continue;
             }
 
-            View view = MqttFactory.create(this, handler, type, dict);
+            View view = MqttFactory.create(this, getParent(group), handler, type, dict);
             if (view != null) {
                 group.addView(view);
             } else {

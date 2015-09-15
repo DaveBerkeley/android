@@ -9,7 +9,6 @@ import android.location.Location;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
-import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -84,21 +83,68 @@ class Topic
 }
 
     /*
+     *  Style
+     */
+
+class MqttStyle {
+    private MqttControl parent;
+
+    private Integer fontsize;
+
+    public MqttStyle(MqttControl p, JSONObject json) {
+        parent = p;
+        fontsize = getInt(json, "fontsize");
+    }
+
+    private Integer getInt(JSONObject json, String field) {
+        try {
+            int i = json.getInt(field);
+            Log.d(getClass().getCanonicalName(), "set " + field + " " + i);
+            return new Integer(i);
+        } catch (JSONException e) {
+            return null;
+        }
+    }
+
+    public Integer getfontsize() {
+        MqttStyle style = this;
+        while (style != null) {
+            if (style.fontsize != null)
+                return style.fontsize;
+            if (style.parent == null)
+                return null;
+            style = style.parent.getStyle();
+        }
+        return null;
+    }
+}
+
+interface MqttControl {
+    MqttStyle getStyle();
+}
+
+    /*
      *  Button wrapper
      */
 
-class MqttButton extends Button implements View.OnClickListener {
+class MqttButton extends Button implements View.OnClickListener, MqttControl {
     CallBackHandler mqttHandler;
     Topic topic;
     String data;
 
-    MqttButton(Context ctx, CallBackHandler handler, String label, String wr_topic, String send) {
+    private MqttButton(Context ctx, MqttStyle s, CallBackHandler handler, String label, String wr_topic, String send) {
         super(ctx);
         setText(label);
         mqttHandler = handler;
         topic = new Topic(wr_topic);
         setOnClickListener(this);
         data = send;
+        style = s;
+
+        if (s.getfontsize() != null) {
+            Log.d(getClass().getCanonicalName(), "set font size " + (float) s.getfontsize());
+            setTextSize((float) s.getfontsize());
+        }
     }
 
     @Override
@@ -107,12 +153,20 @@ class MqttButton extends Button implements View.OnClickListener {
         mqttHandler.sendMessage(topic.get(), data);
     }
 
-    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    private MqttStyle style;
+
+    @Override
+    public MqttStyle getStyle() {
+        return style;
+    }
+
+    static public View create(Activity ctx, MqttControl parent, CallBackHandler handler, JSONObject obj) throws JSONException
     {
         String text = obj.getString("text");
         String topic = obj.getString("topic");
         String send = obj.getString("send");
-        return new MqttButton(ctx, handler, text, topic, send);
+        MqttStyle style = new MqttStyle(parent, obj);
+        return new MqttButton(ctx, style, handler, text, topic, send);
     }
 };
 
@@ -120,18 +174,19 @@ class MqttButton extends Button implements View.OnClickListener {
      *  Progress Bar
      */
 
-class MqttProgressBar extends ProgressBar implements MqttHandler {
+class MqttProgressBar extends ProgressBar implements MqttHandler, MqttControl {
 
     double min, max;
     Picker picker;
 
-    MqttProgressBar(Context ctx, CallBackHandler handler, double fmin, double fmax, String t, String field) {
+    private MqttProgressBar(Context ctx, MqttStyle s, CallBackHandler handler, double fmin, double fmax, String t, String field) {
         super(ctx, null, android.R.attr.progressBarStyleHorizontal);
         Topic topic = new Topic(t);
         handler.addHandler(topic.get(), this);
         min = fmin;
         max = fmax;
         picker = new Picker(field);
+        style = s;
     }
 
     private int translate(double n)
@@ -154,13 +209,21 @@ class MqttProgressBar extends ProgressBar implements MqttHandler {
         }
     }
 
-    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    private MqttStyle style;
+
+    @Override
+    public MqttStyle getStyle() {
+        return style;
+    }
+
+    static public View create(Activity ctx, MqttControl parent, CallBackHandler handler, JSONObject obj) throws JSONException
     {
         double min = obj.getDouble("min");
         double max = obj.getDouble("max");
         String topic = obj.getString("topic");
         String field = obj.getString("field");
-        return new MqttProgressBar(ctx, handler, min, max, topic, field);
+        MqttStyle style = new MqttStyle(parent, obj);
+        return new MqttProgressBar(ctx, style, handler, min, max, topic, field);
     }
 };
 
@@ -558,7 +621,7 @@ class MqttEditText extends EditText implements View.OnKeyListener {
      */
 
 class MqttFactory {
-    static public View create(Activity ctx, CallBackHandler handler, String type, JSONObject obj) throws JSONException
+    static public View create(Activity ctx, MqttControl parent, CallBackHandler handler, String type, JSONObject obj) throws JSONException
     {
         if (type.equals("TextLabel")) {
             return MqttLabel.create(ctx, handler, obj);
@@ -570,10 +633,10 @@ class MqttFactory {
             return MqttCheckBox.create(ctx, handler, obj);
         }
         if (type.equals("ProgressBar")) {
-            return MqttProgressBar.create(ctx, handler, obj);
+            return MqttProgressBar.create(ctx, parent, handler, obj);
         }
         if (type.equals("Button")) {
-            return MqttButton.create(ctx, handler, obj);
+            return MqttButton.create(ctx, parent, handler, obj);
         }
         if (type.equals("SeekBar")) {
             return MqttSeekBar.create(ctx, handler, obj);
