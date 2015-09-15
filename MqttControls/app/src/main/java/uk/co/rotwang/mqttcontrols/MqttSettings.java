@@ -22,7 +22,7 @@ public class MqttSettings {
     String password;
 
     public void read(Context context) {
-        SharedPreferences sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_WORLD_READABLE);
+        SharedPreferences sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         server = sp.getString("server", "");
         port = sp.getInt("port", 1883);
         url = sp.getString("url", "");
@@ -34,7 +34,7 @@ public class MqttSettings {
     }
 
     public void save(Context context) {
-        SharedPreferences sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_WORLD_READABLE);
+        SharedPreferences sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         SharedPreferences.Editor edit = sp.edit();
         edit.putString("server", server);
         edit.putInt("port", port);
