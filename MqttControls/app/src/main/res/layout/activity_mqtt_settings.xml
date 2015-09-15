@@ -9,16 +9,22 @@
     android:orientation="vertical"
     tools:context="uk.co.rotwang.mqttcontrols.MqttSettingsActivity">
 
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
     <TextView android:text="Server"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         />
+
     <EditText
         android:id="@+id/server_edit"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:singleLine="true"
-        />
+        android:width="200dp" />
     <TextView android:text="Port"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -31,6 +37,8 @@
         android:singleLine="true"
         />
 
+    </LinearLayout>
+
     <TextView android:text="URL"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -41,6 +49,11 @@
         android:layout_height="wrap_content"
         android:singleLine="true"
         />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
     <CheckBox
         android:layout_width="wrap_content"
@@ -54,7 +67,9 @@
         android:text="Mute"
         android:id="@+id/mute" />
 
-    <TextView android:text="Ident"
+    </LinearLayout>
+
+     <TextView android:text="Ident"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         />
