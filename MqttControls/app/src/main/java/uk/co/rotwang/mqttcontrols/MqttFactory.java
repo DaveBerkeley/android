@@ -117,11 +117,19 @@ class MqttStyle {
         }
         return null;
     }
+
+    public void apply(TextView view) {
+        if (getfontsize() != null) {
+            view.setTextSize((float) getfontsize());
+        }
+    }
 }
 
 interface MqttControl {
     MqttStyle getStyle();
 }
+
+
 
     /*
      *  Button wrapper
@@ -140,11 +148,7 @@ class MqttButton extends Button implements View.OnClickListener, MqttControl {
         setOnClickListener(this);
         data = send;
         style = s;
-
-        if (s.getfontsize() != null) {
-            Log.d(getClass().getCanonicalName(), "set font size " + (float) s.getfontsize());
-            setTextSize((float) s.getfontsize());
-        }
+        s.apply(this);
     }
 
     @Override
@@ -279,17 +283,19 @@ class MqttSeekBar extends SeekBar implements SeekBar.OnSeekBarChangeListener {
      *  CheckBox
      */
 
-class MqttCheckBox extends CheckBox implements MqttHandler {
+class MqttCheckBox extends CheckBox implements MqttHandler, MqttControl {
 
     Picker picker;
 
-    public MqttCheckBox(Context ctx, CallBackHandler handler, String t, String field) {
+    public MqttCheckBox(Context ctx, MqttStyle s, CallBackHandler handler, String t, String field) {
 
         super(ctx);
         setEnabled(false);
         Topic topic = new Topic(t);
         handler.addHandler(topic.get(), this);
         picker = new Picker(field);
+        style = s;
+        s.apply(this);
     }
 
     @Override
@@ -308,11 +314,18 @@ class MqttCheckBox extends CheckBox implements MqttHandler {
         }
     }
 
-    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    private MqttStyle style;
+    @Override
+    public MqttStyle getStyle() {
+        return style;
+    }
+
+    static public View create(Activity ctx, MqttControl parent, CallBackHandler handler, JSONObject obj) throws JSONException
     {
         String topic = obj.getString("topic");
         String field = obj.getString("field");
-        return new MqttCheckBox(ctx, handler, topic, field);
+        MqttStyle style = new MqttStyle(parent, obj);
+        return new MqttCheckBox(ctx, style, handler, topic, field);
     }
 };
 
@@ -383,19 +396,22 @@ class MqttBell extends View implements MqttHandler {
      *  TextView
      */
 
-class MqttTextView extends TextView implements MqttHandler {
+class MqttTextView extends TextView implements MqttHandler, MqttControl {
 
     Picker picker;
     String pre_text;
     String post_text;
 
-    public MqttTextView(Activity ctx, CallBackHandler handler, String t, String field, String pre, String post) {
+    public MqttTextView(Activity ctx, MqttStyle s, CallBackHandler handler, String t, String field, String pre, String post) {
         super(ctx);
         pre_text = (pre == null) ? "" : pre;
         post_text = (post == null) ? "" : post;
         Topic topic = new Topic(t);
         handler.addHandler(topic.get(), this);
         picker = new Picker(field);
+        style = s;
+
+        s.apply(this);
     }
 
     @Override
@@ -414,13 +430,21 @@ class MqttTextView extends TextView implements MqttHandler {
         return null;
     }
 
-    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    private MqttStyle style;
+
+    @Override
+    public MqttStyle getStyle() {
+        return style;
+    }
+
+    static public View create(Activity ctx, MqttControl parent, CallBackHandler handler, JSONObject obj) throws JSONException
     {
         String topic = obj.getString("topic");
         String field = obj.getString("field");
         String pre = getString(obj, "pre");
         String post = getString(obj, "post");
-        return new MqttTextView(ctx, handler, topic, field, pre, post);
+        MqttStyle style = new MqttStyle(parent, obj);
+        return new MqttTextView(ctx, style, handler, topic, field, pre, post);
     }
 };
 
@@ -428,14 +452,14 @@ class MqttTextView extends TextView implements MqttHandler {
      *  Url link
      */
 
-class MqttUrl extends TextView implements MqttHandler, View.OnClickListener {
+class MqttUrl extends TextView implements MqttHandler, View.OnClickListener, MqttControl {
 
     Picker text_picker;
     Picker url_picker;
     String url;
     Activity activity;
 
-    public MqttUrl(Activity ctx, CallBackHandler handler, String t, String text_field, String url_field) {
+    public MqttUrl(Activity ctx, MqttStyle s, CallBackHandler handler, String t, String text_field, String url_field) {
         super(ctx);
         Topic topic = new Topic(t);
         handler.addHandler(topic.get(), this);
@@ -445,6 +469,9 @@ class MqttUrl extends TextView implements MqttHandler, View.OnClickListener {
         activity = ctx;
         setOnClickListener(this);
         setTextColor(Color.BLUE);
+        style = s;
+
+        s.apply(this);
     }
 
     @Override
@@ -481,12 +508,20 @@ class MqttUrl extends TextView implements MqttHandler, View.OnClickListener {
         }
     }
 
-    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    private MqttStyle style;
+
+    @Override
+    public MqttStyle getStyle() {
+        return style;
+    }
+
+    static public View create(Activity ctx, MqttControl parent, CallBackHandler handler, JSONObject obj) throws JSONException
     {
         String topic = obj.getString("topic");
         String text_field = obj.getString("text");
         String url_field = obj.getString("url");
-        return new MqttUrl(ctx, handler, topic, text_field, url_field);
+        MqttStyle style = new MqttStyle(parent, obj);
+        return new MqttUrl(ctx, style, handler, topic, text_field, url_field);
     }
 };
 
@@ -494,21 +529,31 @@ class MqttUrl extends TextView implements MqttHandler, View.OnClickListener {
      *  Label
      */
 
-class MqttLabel extends TextView {
+class MqttLabel extends TextView implements MqttControl {
 
     MqttLabel(Context ctx) {
         super(ctx);
     }
 
-    public MqttLabel(Activity ctx, String text) {
+    public MqttLabel(Activity ctx, MqttStyle s, String text) {
         super(ctx);
         setText(text);
+        style = s;
+
+        s.apply(this);
     }
 
-    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    private MqttStyle style;
+    @Override
+    public MqttStyle getStyle() {
+        return style;
+    }
+
+    static public View create(Activity ctx, MqttControl parent, CallBackHandler handler, JSONObject obj) throws JSONException
     {
         String text = obj.getString("text");
-        return new MqttLabel(ctx, text);
+        MqttStyle style = new MqttStyle(parent, obj);
+        return new MqttLabel(ctx, style, text);
     }
 };
 
@@ -575,12 +620,12 @@ class MqttGps extends TextView implements OnLocation {
      *  Text Entry
      */
 
-class MqttEditText extends EditText implements View.OnKeyListener {
+class MqttEditText extends EditText implements View.OnKeyListener, MqttControl {
 
     Topic topic;
     CallBackHandler handler;
 
-    public MqttEditText(Activity ctx, CallBackHandler h, String t) {
+    public MqttEditText(Activity ctx, MqttStyle s, CallBackHandler h, String t) {
         super(ctx);
         handler = h;
         topic = new Topic(t);
@@ -588,6 +633,9 @@ class MqttEditText extends EditText implements View.OnKeyListener {
         setSingleLine(true);
         setImeOptions(EditorInfo.IME_ACTION_SEND);
         setOnKeyListener(this);
+
+        style = s;
+        s.apply(this);
     }
 
     public void send() {
@@ -609,10 +657,17 @@ class MqttEditText extends EditText implements View.OnKeyListener {
         return true;
     }
 
-    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    private MqttStyle style;
+    @Override
+    public MqttStyle getStyle() {
+        return style;
+    }
+
+    static public View create(Activity ctx, MqttControl parent, CallBackHandler handler, JSONObject obj) throws JSONException
     {
         String topic = obj.getString("topic");
-        return new MqttEditText(ctx, handler, topic);
+        MqttStyle style = new MqttStyle(parent, obj);
+        return new MqttEditText(ctx, style, handler, topic);
     }
 }
 
@@ -624,13 +679,13 @@ class MqttFactory {
     static public View create(Activity ctx, MqttControl parent, CallBackHandler handler, String type, JSONObject obj) throws JSONException
     {
         if (type.equals("TextLabel")) {
-            return MqttLabel.create(ctx, handler, obj);
+            return MqttLabel.create(ctx, parent, handler, obj);
         }
         if (type.equals("TextView")) {
-            return MqttTextView.create(ctx, handler, obj);
+            return MqttTextView.create(ctx, parent, handler, obj);
         }
         if (type.equals("CheckBox")) {
-            return MqttCheckBox.create(ctx, handler, obj);
+            return MqttCheckBox.create(ctx, parent, handler, obj);
         }
         if (type.equals("ProgressBar")) {
             return MqttProgressBar.create(ctx, parent, handler, obj);
@@ -645,10 +700,10 @@ class MqttFactory {
             return MqttBell.create(ctx, handler, obj);
         }
         if (type.equals("Url")) {
-            return MqttUrl.create(ctx, handler, obj);
+            return MqttUrl.create(ctx, parent, handler, obj);
         }
         if (type.equals("EditText")) {
-            return MqttEditText.create(ctx, handler, obj);
+            return MqttEditText.create(ctx, parent, handler, obj);
         }
         if (type.equals("GPS")) {
             return MqttGps.create(ctx, handler, obj);
@@ -656,3 +711,5 @@ class MqttFactory {
         return null;
     }
 }
+
+// FIN
