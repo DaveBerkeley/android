@@ -66,6 +66,10 @@ public class MainActivity extends AppCompatActivity implements OnUrl {
         }
 
         MqttConnectOptions options = new MqttConnectOptions();
+        if (!conf.username.isEmpty()) {
+            options.setUserName(conf.username);
+            options.setPassword(conf.password.toCharArray());
+        }
         try {
             client.connect(options);
         } catch (MqttException e) {
@@ -395,6 +399,7 @@ public class MainActivity extends AppCompatActivity implements OnUrl {
     protected void onDestroy() {
         handler.unsubscribe();
         super.onDestroy();
+        //GpsLocation.close();
     }
 }
 

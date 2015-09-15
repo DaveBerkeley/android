@@ -54,6 +54,11 @@ public class MqttSettingsActivity extends AppCompatActivity {
         edit = (EditText) findViewById(R.id.ident_edit);
         edit.setText(sflag.get());
         edit.setOnEditorActionListener(et_listener);
+
+        edit = (EditText) findViewById(R.id.username);
+        edit.setText(s.username);
+        edit = (EditText) findViewById(R.id.password);
+        edit.setText(s.password);
     }
 
     @Override
@@ -135,6 +140,11 @@ public class MqttSettingsActivity extends AppCompatActivity {
 
         edit = (EditText) findViewById(R.id.ident_edit);
         s.ident = edit.getText().toString();
+
+        edit = (EditText) findViewById(R.id.username);
+        s.username = edit.getText().toString();
+        edit = (EditText) findViewById(R.id.password);
+        s.password = edit.getText().toString();
 
         toast("Saving " + s.server + ":" + port);
 

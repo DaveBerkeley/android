@@ -87,6 +87,14 @@ class GpsLocation implements LocationListener, OnFlag<Boolean> {
 
         return instance;
     }
+
+    public static void close()
+    {
+        if (instance != null) {
+            instance.connect(false);
+        }
+        instance = null;
+    }
 }
 
 //  FIN

@@ -18,6 +18,8 @@ public class MqttSettings {
     boolean allow_location;
     boolean mute;
     String ident;
+    String username;
+    String password;
 
     public void read(Context context) {
         SharedPreferences sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_WORLD_READABLE);
@@ -27,6 +29,8 @@ public class MqttSettings {
         allow_location = sp.getBoolean("location", false);
         mute = sp.getBoolean("mute", false);
         ident = sp.getString("ident", "");
+        password = sp.getString("password", "");
+        username = sp.getString("username", "");
     }
 
     public void save(Context context) {
@@ -38,6 +42,8 @@ public class MqttSettings {
         edit.putBoolean("location", allow_location);
         edit.putBoolean("mute", mute);
         edit.putString("ident", ident);
+        edit.putString("password", password);
+        edit.putString("username", username);
         edit.commit();
     }
 
