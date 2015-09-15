@@ -10,6 +10,7 @@ import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.SubMenu;
 import android.view.View;
 import android.content.Intent;
 import android.view.ViewGroup;
@@ -34,6 +35,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 
     /*
      *  Activity
@@ -232,6 +234,29 @@ public class MainActivity extends AppCompatActivity implements OnUrl {
         return elements;
     }
 
+    private final int PAGE_MENU = 1000;
+
+    private void addPagesToMenu(JSONArray reader) throws JSONException {
+
+        final int GROUP_ID = 1;
+        if (sub_menu != null) {
+            sub_menu.removeGroup(GROUP_ID);
+        }
+
+        // Read in the page names
+        for (int i = 0; i <= max_page; ++i) {
+            JSONArray page = reader.getJSONArray(i);
+            JSONObject dict = page.getJSONObject(1);
+            String title = dict.getString("title");
+
+            if (sub_menu == null) {
+                sub_menu = main_menu.addSubMenu("Goto Page");
+            }
+
+            sub_menu.add(GROUP_ID, PAGE_MENU + i, 0, title);
+        }
+    }
+
     private boolean loadControls(String conf)
     {
         // remove all current MQTT subscribe
@@ -251,7 +276,10 @@ public class MainActivity extends AppCompatActivity implements OnUrl {
             JSONArray reader = new JSONArray(conf);
             max_page = reader.length() - 1;
             if (page_num > max_page)
-                page_num = max_page;
+                page_num = 0;
+
+            addPagesToMenu(reader);
+
             JSONArray page = readPage(reader, page_num);
             loadControls(layout, page);
         } catch (JSONException e) {
@@ -271,10 +299,15 @@ public class MainActivity extends AppCompatActivity implements OnUrl {
         loadControls(config);
     }
 
+    private Menu main_menu;
+    private SubMenu sub_menu;
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
+        main_menu = menu;
+        sub_menu = null;
         return true;
     }
 
@@ -283,7 +316,9 @@ public class MainActivity extends AppCompatActivity implements OnUrl {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        switch (item.getItemId())
+        int id = item.getItemId();
+
+        switch (id)
         {
             case R.id.action_settings : {
                 actionSettings(null);
@@ -305,10 +340,23 @@ public class MainActivity extends AppCompatActivity implements OnUrl {
                 Intent intent = new Intent(Intent.ACTION_VIEW);
                 intent.setData(Uri.parse(url));
                 startActivity(intent);
-
+                break;
             }
-            default : return super.onOptionsItemSelected(item);
         }
+
+        id -= PAGE_MENU;
+
+        if ((id > 0) && (id <= max_page)) {
+            // Page selected from sub_menu
+            if (page_num != id) {
+                page_num = id;
+                Log.d(getClass().getCanonicalName(), "goto page:" + page_num);
+                redraw();
+            }
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 
     /** Called when the user clicks the Settings button */
