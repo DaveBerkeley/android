@@ -98,18 +98,19 @@ class MqttStyle {
 
     private Integer getInt(JSONObject json, String field) {
         try {
-            int i = json.getInt(field);
-            return new Integer(i);
+            return json.getInt(field);
         } catch (JSONException e) {
             return null;
         }
     }
 
-    interface IntGetter {
-        Integer get(MqttStyle s);
+    //  Recursively search the style list for the first setting
+
+    interface Getter<T> {
+        T get(MqttStyle s);
     }
 
-    public Integer get(IntGetter getter) {
+    public <T extends Object> T cascade(Getter<T> getter) {
         MqttStyle style = this;
         while (style != null) {
             if (getter.get(style) != null)
@@ -122,7 +123,7 @@ class MqttStyle {
     }
 
     public Integer getfontsize() {
-        return get(new IntGetter() {
+        return cascade(new Getter<Integer>() {
             @Override
             public Integer get(MqttStyle s) {
                 return s.fontsize;
@@ -381,7 +382,7 @@ class MqttBell extends View implements MqttHandler {
             last_value = i + 1; // to force a notification
         }
 
-        if (first == true) {
+        if (first) {
             last_value = i;
             first = false;
             return;
@@ -578,12 +579,10 @@ class MqttGps extends TextView implements OnLocation {
 
     private Topic topic;
     private CallBackHandler handler;
-    private Activity activity;
 
     private MqttGps(Activity ctx, CallBackHandler h, String t) {
         super(ctx);
         handler = h;
-        activity = ctx;
         topic = new Topic(t);
 
         Flag location_flag = Flag.get("location");
