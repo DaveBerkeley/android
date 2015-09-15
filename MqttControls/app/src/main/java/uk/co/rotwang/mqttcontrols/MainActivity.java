@@ -295,6 +295,7 @@ public class MainActivity extends AppCompatActivity implements OnUrl {
             }
             case R.id.exit : {
                 toast(getString(R.string.mqtt_disconnect));
+                GpsLocation.close();
                 finish();
                 return true;
             }
@@ -399,7 +400,6 @@ public class MainActivity extends AppCompatActivity implements OnUrl {
     protected void onDestroy() {
         handler.unsubscribe();
         super.onDestroy();
-        //GpsLocation.close();
     }
 }
 
