@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -629,6 +630,44 @@ class MqttEditText extends EditText implements View.OnKeyListener, MqttControl {
 }
 
     /*
+     *  WebView
+     */
+
+class MqttWebView extends WebView implements MqttControl, MqttHandler {
+
+    Activity activity;
+    Picker picker;
+
+    public MqttWebView(Activity ctx, CallBackHandler handler, String t, String f) {
+        super(ctx);
+        Topic topic = new Topic(t);
+        handler.addHandler(topic.get(), this);
+        picker = new Picker(f);
+        activity = ctx;
+    }
+
+    @Override
+    public void onMessage(String topic, MqttMessage msg) {
+        final String s = msg.toString();
+        final String url = picker.pick(s);
+        //Log.d(getClass().getCanonicalName(), "WebView : " + url);
+        loadUrl(url);
+    }
+
+    @Override
+    public MqttStyle getStyle() {
+        return null;
+    }
+
+    static public View create(Activity ctx, CallBackHandler handler, JSONObject obj) throws JSONException
+    {
+        String topic = obj.getString("topic");
+        String field = obj.getString("field");
+        return new MqttWebView(ctx, handler, topic, field);
+    }
+}
+
+    /*
      *  Factory method to construct View classes
      */
 
@@ -664,6 +703,9 @@ class MqttFactory {
         }
         if (type.equals("GPS")) {
             return MqttGps.create(ctx, handler, obj);
+        }
+        if (type.equals("WebView")) {
+            return MqttWebView.create(ctx, handler, obj);
         }
         return null;
     }
