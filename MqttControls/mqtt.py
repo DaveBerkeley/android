@@ -72,6 +72,10 @@ def EditText(topic, field=None, *args, **kwargs):
     c = Control("EditText", topic=topic, field=field, **kwargs)
     return c.json()
 
+def WebView(topic, field=None, *args, **kwargs):
+    c = Control("WebView", topic=topic, field=field, **kwargs)
+    return c.json()
+
 #
 #
 
@@ -270,9 +274,9 @@ controls = [
     ProgressBar(0.0, 3000.0, "home/power", "power"),
     TextView("home/power", "power", post=" W"),
 
-    GPS("uif/gps/1"),
+    GPS("uif/gps/%I"),
 
-    Url("url/alert/%I", fontsize=20),
+    Url("url/alert/dave", fontsize=20, textcolor="blue"),
     TextLabel(""),
     GridView([
         [
@@ -281,7 +285,7 @@ controls = [
             TextView("uif/power_max", post=" W"),
             Bell("bell/1"),
         ]
-    ], fontsize=15),
+    ], fontsize=18, textcolor="red"),
     TextLabel("first"),
     TextLabel("another"),
     TextLabel("FIN"),
@@ -301,12 +305,19 @@ def make_chat(title, ident, other):
 chat1 = make_chat("Chat 1", "maggie", "dave")
 chat2 = make_chat("Chat 2", "dave", "maggie")
 
+#
+#
+
+web = [
+    WebView("url/alert/dave", "url"),
+]
 
 #
 #
 
 pages = [
-    Page("Test Page", controls),
+    Page("Main Page", controls),
+    Page("Web View", web),
     Page("Chat 1", chat1),
     Page("Chat 2", chat2),
     Page("Temperature", temperature),
