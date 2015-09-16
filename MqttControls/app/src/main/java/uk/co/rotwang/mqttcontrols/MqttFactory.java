@@ -1,7 +1,6 @@
 package uk.co.rotwang.mqttcontrols;
 
 import android.app.Activity;
-import android.app.Notification;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
@@ -24,12 +23,9 @@ import android.widget.TextView;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.w3c.dom.Text;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
     /*
      *  Parser : optionally extracts fields from JSON string

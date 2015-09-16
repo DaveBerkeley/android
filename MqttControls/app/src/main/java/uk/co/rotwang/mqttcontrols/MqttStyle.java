@@ -25,9 +25,9 @@ class MqttStyle {
         parse(json);
     }
 
-        /*
-         *  Get attribute from JSON Object.
-         */
+    /*
+     *  Get attribute from JSON Object.
+     */
 
     private Integer getInt(JSONObject json, String field) {
         try {
@@ -52,24 +52,6 @@ class MqttStyle {
         return Color.parseColor(s);
     }
 
-    //  search the style list for the nearest setting or parent setting.
-
-    interface Getter<T> {
-        T get(MqttStyle s);
-    }
-
-    public <T extends Object> T cascade(Getter<T> getter) {
-        MqttStyle style = this;
-        while (style != null) {
-            if (getter.get(style) != null)
-                return getter.get(style);
-            if (style.parent == null)
-                return null;
-            style = style.parent.getStyle();
-        }
-        return null;
-    }
-
         /*
          *  StyleAttrib class for each attribute.
          */
@@ -79,8 +61,26 @@ class MqttStyle {
         void set(T t, TextView view);
     }
 
+    interface Getter<T> {
+        T get(MqttStyle s);
+    }
+
+    //  search the style list for the nearest setting or parent setting.
+    private <T extends Object> T cascade(Getter<T> getter) {
+        MqttStyle style = this;
+        while (style != null) {
+            T t = getter.get(style);
+            if (t != null)
+                return t;
+            if (style.parent == null)
+                return null;
+            style = style.parent.getStyle();
+        }
+        return null;
+    }
+
     abstract class StyleAttrib<T> implements Attrib<T>, Getter<T> {
-        void apply(MqttStyle style, TextView view) {
+        void apply(TextView view) {
             T t = cascade(this);
             if (t != null) {
                 set(t, view);
@@ -154,19 +154,21 @@ class MqttStyle {
         return styles;
     }
 
-    //  Apply Style to View
-
-    public void apply(TextView view) {
-        for (StyleAttrib style : styles()) {
-            style.apply(this, view);
-        }
-    }
-
     //  Parse JSON
 
-    public void parse(JSONObject json) {
+    private void parse(JSONObject json) {
         for (StyleAttrib style : styles()) {
             style.parse(json);
         }
     }
+
+    //  Apply Style to View
+
+    public void apply(TextView view) {
+        for (StyleAttrib style : styles()) {
+            style.apply(view);
+        }
+    }
 }
+
+//  FIN
