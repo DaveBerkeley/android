@@ -315,8 +315,21 @@ web = [
 #
 #
 
+player = [
+    TextView("home/player/status", "status", fontsize=30),
+    Button("Play", "home/player/control", r'"play"'),
+    Button("Stop", "home/player/control", r'"stop"'),
+    Button("Pause", "home/player/control", r'"pause"'),
+    Button("Debug", "home/player/control", r'"dir"'),
+    ProgressBar(0.0, 100.0, "home/player/status", "percent"),
+]
+
+#
+#
+
 pages = [
     Page("Main Page", controls),
+    Page("Player", player),
     Page("Web View", web),
     Page("Chat 1", chat1),
     Page("Chat 2", chat2),
