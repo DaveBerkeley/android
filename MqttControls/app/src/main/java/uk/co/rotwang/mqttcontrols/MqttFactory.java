@@ -1,6 +1,7 @@
 package uk.co.rotwang.mqttcontrols;
 
 import android.app.Activity;
+import android.app.Notification;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
@@ -26,7 +27,9 @@ import org.json.JSONObject;
 import org.w3c.dom.Text;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
     /*
      *  Parser : optionally extracts fields from JSON string
@@ -96,25 +99,12 @@ class MqttStyle {
 
     public MqttStyle(MqttControl p, JSONObject json) {
         parent = p;
-
-        StyleFontSize sfs = new StyleFontSize();
-        sfs.parse(json);
-        StyleTextColor stc = new StyleTextColor();
-        stc.parse(json);
-        StyleBackColor sbc = new StyleBackColor();
-        sbc.parse(json);
+        parse(json);
     }
 
         /*
          *  Get attribute from JSON Object.
          */
-
-    private Integer getColor(JSONObject json, String field) {
-        String s = getString(json, field);
-        if (s == null)
-            return null;
-        return Color.parseColor(s);
-    }
 
     private Integer getInt(JSONObject json, String field) {
         try {
@@ -132,7 +122,14 @@ class MqttStyle {
         }
     }
 
-    //  Recursively search the style list for the nearest setting
+    private Integer getColor(JSONObject json, String field) {
+        String s = getString(json, field);
+        if (s == null)
+            return null;
+        return Color.parseColor(s);
+    }
+
+    //  search the style list for the nearest setting or parent setting.
 
     interface Getter<T> {
         T get(MqttStyle s);
@@ -151,7 +148,7 @@ class MqttStyle {
     }
 
         /*
-         *  Cascading access functions
+         *  StyleAttrib class for each attribute.
          */
 
     interface Attrib<T> {
@@ -222,15 +219,32 @@ class MqttStyle {
         }
     }
 
+    //  Added StyleAttrib classes to this list
+
+    private List<StyleAttrib> styles()
+    {
+        List<StyleAttrib> styles = new ArrayList<StyleAttrib>();
+        // Add any new StyleAttrib to this list
+        styles.add(new StyleFontSize());
+        styles.add(new StyleTextColor());
+        styles.add(new StyleBackColor());
+        return styles;
+    }
+
     //  Apply Style to View
 
     public void apply(TextView view) {
-        StyleFontSize sfs = new StyleFontSize();
-        sfs.apply(this, view);
-        StyleTextColor stc = new StyleTextColor();
-        stc.apply(this, view);
-        StyleBackColor sbc = new StyleBackColor();
-        sbc.apply(this, view);
+        for (StyleAttrib style : styles()) {
+            style.apply(this, view);
+        }
+    }
+
+    //  Parse JSON
+
+    public void parse(JSONObject json) {
+        for (StyleAttrib style : styles()) {
+            style.parse(json);
+        }
     }
 }
 
