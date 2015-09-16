@@ -23,6 +23,7 @@ import android.widget.TextView;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -95,11 +96,13 @@ class MqttStyle {
 
     public MqttStyle(MqttControl p, JSONObject json) {
         parent = p;
-        //fontsize = getInt(json, "fontsize");
+
         StyleFontSize sfs = new StyleFontSize();
-        sfs.parse(this, json);
-        textcolor = getColor(json, "textcolor");
-        backcolor = getColor(json, "backcolor");
+        sfs.parse(json);
+        StyleTextColor stc = new StyleTextColor();
+        stc.parse(json);
+        StyleBackColor sbc = new StyleBackColor();
+        sbc.parse(json);
     }
 
         /*
@@ -129,17 +132,17 @@ class MqttStyle {
         }
     }
 
-    //  Recursively search the style list for the first setting
+    //  Recursively search the style list for the nearest setting
 
     interface Getter<T> {
-        T getField(MqttStyle s);
+        T get(MqttStyle s);
     }
 
     public <T extends Object> T cascade(Getter<T> getter) {
         MqttStyle style = this;
         while (style != null) {
-            if (getter.getField(style) != null)
-                return getter.getField(style);
+            if (getter.get(style) != null)
+                return getter.get(style);
             if (style.parent == null)
                 return null;
             style = style.parent.getStyle();
@@ -152,53 +155,71 @@ class MqttStyle {
          */
 
     interface Attrib<T> {
-        void parse(MqttStyle style, JSONObject json);
-        void apply(MqttStyle style, TextView view);
+        void parse(JSONObject json);
+        void set(T t, TextView view);
     }
 
     abstract class StyleAttrib<T> implements Attrib<T>, Getter<T> {
-        T getAttrib(MqttStyle s, Getter<T> getter) {
-            return cascade(getter);
+        void apply(MqttStyle style, TextView view) {
+            T t = cascade(this);
+            if (t != null) {
+                set(t, view);
+            }
         }
     }
 
     class StyleFontSize extends StyleAttrib<Integer> implements Getter<Integer> {
 
         @Override
-        public void parse(MqttStyle style, JSONObject json) {
-            style.fontsize = getInt(json, "fontsize");
+        public void parse(JSONObject json) {
+            fontsize = getInt(json, "fontsize");
         }
 
         @Override
-        public void apply(MqttStyle style, TextView view) {
-            Integer i = getAttrib(style, this);
-            if (i != null) {
-                view.setTextSize((float) i);
-            }
+        public void set(Integer i, TextView view) {
+            view.setTextSize((float) i);
         }
 
         @Override
-        public Integer getField(MqttStyle s) {
+        public Integer get(MqttStyle s) {
             return s.fontsize;
         }
     }
 
-    public Integer gettextcolor() {
-        return cascade(new Getter<Integer>() {
-            @Override
-            public Integer getField(MqttStyle s) {
-                return s.textcolor;
-            }
-        });
+    class StyleTextColor extends StyleAttrib<Integer> implements Getter<Integer> {
+
+        @Override
+        public void parse(JSONObject json) {
+            textcolor = getColor(json, "textcolor");
+        }
+
+        @Override
+        public void set(Integer i, TextView view) {
+            view.setTextColor(i);
+        }
+
+        @Override
+        public Integer get(MqttStyle s) {
+            return s.textcolor;
+        }
     }
 
-    public Integer getbackcolor() {
-        return cascade(new Getter<Integer>() {
-            @Override
-            public Integer getField(MqttStyle s) {
-                return s.backcolor;
-            }
-        });
+    class StyleBackColor extends StyleAttrib<Integer> implements Getter<Integer> {
+
+        @Override
+        public void parse(JSONObject json) {
+            backcolor = getColor(json, "backcolor");
+        }
+
+        @Override
+        public void set(Integer i, TextView view) {
+            view.setBackgroundColor(i);
+        }
+
+        @Override
+        public Integer get(MqttStyle s) {
+            return s.backcolor;
+        }
     }
 
     //  Apply Style to View
@@ -206,15 +227,10 @@ class MqttStyle {
     public void apply(TextView view) {
         StyleFontSize sfs = new StyleFontSize();
         sfs.apply(this, view);
-
-        Integer i = gettextcolor();
-        if (i != null) {
-            view.setTextColor(i);
-        }
-        i = getbackcolor();
-        if (i != null) {
-            view.setBackgroundColor(i);
-        }
+        StyleTextColor stc = new StyleTextColor();
+        stc.apply(this, view);
+        StyleBackColor sbc = new StyleBackColor();
+        sbc.apply(this, view);
     }
 }
 
