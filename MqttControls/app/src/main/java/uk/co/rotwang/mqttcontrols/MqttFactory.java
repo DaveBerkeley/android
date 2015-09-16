@@ -90,10 +90,27 @@ class MqttStyle {
     private MqttControl parent;
 
     private Integer fontsize;
+    private Integer textcolor;
+    private Integer backcolor;
 
     public MqttStyle(MqttControl p, JSONObject json) {
         parent = p;
-        fontsize = getInt(json, "fontsize");
+        //fontsize = getInt(json, "fontsize");
+        StyleFontSize sfs = new StyleFontSize();
+        sfs.parse(this, json);
+        textcolor = getColor(json, "textcolor");
+        backcolor = getColor(json, "backcolor");
+    }
+
+        /*
+         *  Get attribute from JSON Object.
+         */
+
+    private Integer getColor(JSONObject json, String field) {
+        String s = getString(json, field);
+        if (s == null)
+            return null;
+        return Color.parseColor(s);
     }
 
     private Integer getInt(JSONObject json, String field) {
@@ -104,17 +121,25 @@ class MqttStyle {
         }
     }
 
+    private String getString(JSONObject json, String field) {
+        try {
+            return json.getString(field);
+        } catch (JSONException e) {
+            return null;
+        }
+    }
+
     //  Recursively search the style list for the first setting
 
     interface Getter<T> {
-        T get(MqttStyle s);
+        T getField(MqttStyle s);
     }
 
     public <T extends Object> T cascade(Getter<T> getter) {
         MqttStyle style = this;
         while (style != null) {
-            if (getter.get(style) != null)
-                return getter.get(style);
+            if (getter.getField(style) != null)
+                return getter.getField(style);
             if (style.parent == null)
                 return null;
             style = style.parent.getStyle();
@@ -122,11 +147,56 @@ class MqttStyle {
         return null;
     }
 
-    public Integer getfontsize() {
+        /*
+         *  Cascading access functions
+         */
+
+    interface Attrib<T> {
+        void parse(MqttStyle style, JSONObject json);
+        void apply(MqttStyle style, TextView view);
+    }
+
+    abstract class StyleAttrib<T> implements Attrib<T>, Getter<T> {
+        T getAttrib(MqttStyle s, Getter<T> getter) {
+            return cascade(getter);
+        }
+    }
+
+    class StyleFontSize extends StyleAttrib<Integer> implements Getter<Integer> {
+
+        @Override
+        public void parse(MqttStyle style, JSONObject json) {
+            style.fontsize = getInt(json, "fontsize");
+        }
+
+        @Override
+        public void apply(MqttStyle style, TextView view) {
+            Integer i = getAttrib(style, this);
+            if (i != null) {
+                view.setTextSize((float) i);
+            }
+        }
+
+        @Override
+        public Integer getField(MqttStyle s) {
+            return s.fontsize;
+        }
+    }
+
+    public Integer gettextcolor() {
         return cascade(new Getter<Integer>() {
             @Override
-            public Integer get(MqttStyle s) {
-                return s.fontsize;
+            public Integer getField(MqttStyle s) {
+                return s.textcolor;
+            }
+        });
+    }
+
+    public Integer getbackcolor() {
+        return cascade(new Getter<Integer>() {
+            @Override
+            public Integer getField(MqttStyle s) {
+                return s.backcolor;
             }
         });
     }
@@ -134,8 +204,16 @@ class MqttStyle {
     //  Apply Style to View
 
     public void apply(TextView view) {
-        if (getfontsize() != null) {
-            view.setTextSize((float) getfontsize());
+        StyleFontSize sfs = new StyleFontSize();
+        sfs.apply(this, view);
+
+        Integer i = gettextcolor();
+        if (i != null) {
+            view.setTextColor(i);
+        }
+        i = getbackcolor();
+        if (i != null) {
+            view.setBackgroundColor(i);
         }
     }
 }
